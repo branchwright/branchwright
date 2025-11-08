@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "useDefineForClassFields": false,
+    "lib": ["ES2022"],
+    "skipLibCheck": true,
+    "noEmit": true,
+
+    /* Bundler mode */
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+
+    /* Linting */
+    "strict": true,
+    "strictPropertyInitialization": false,
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "forceConsistentCasingInFileNames": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
+  },
+  "include": [
+    "branchwright.config.ts",
+    "eslint.config.ts",
+    "prettier.config.ts"
+  ]
+}

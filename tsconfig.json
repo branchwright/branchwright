@@ -1,0 +1,7 @@
+{
+  "files": [],
+  "references": [{ "path": "./tsconfig.src.json" }, { "path": "./tsconfig.conf.json" }],
+  "compilerOptions": {
+    "composite": true
+  }
+}
