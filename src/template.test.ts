@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { buildBranchName, buildBranchNameFromTemplate } from '../src/utils.js';
+import { describe, expect, it } from 'vitest';
+
+import { buildBranchName, buildBranchNameFromTemplate } from './utils.js';
 
 describe('Template functionality', () => {
   describe('buildBranchNameFromTemplate', () => {
@@ -53,12 +54,7 @@ describe('Template functionality', () => {
 
   describe('buildBranchName with template', () => {
     it('should use template when provided', () => {
-      const result = buildBranchName(
-        'feature',
-        'add-authentication',
-        'PROJ-789',
-        '{{type}}/{{ticket}}-{{desc}}'
-      );
+      const result = buildBranchName('feature', 'add-authentication', 'PROJ-789', '{{type}}/{{ticket}}-{{desc}}');
       expect(result).toBe('feature/PROJ-789-add-authentication');
     });
 
@@ -68,12 +64,7 @@ describe('Template functionality', () => {
     });
 
     it('should handle template with only type and description', () => {
-      const result = buildBranchName(
-        'chore',
-        'update-dependencies',
-        undefined,
-        '{{type}}/{{desc}}'
-      );
+      const result = buildBranchName('chore', 'update-dependencies', undefined, '{{type}}/{{desc}}');
       expect(result).toBe('chore/update-dependencies');
     });
   });

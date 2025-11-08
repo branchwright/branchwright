@@ -1,4 +1,4 @@
-import { BranchConfig } from './types.js';
+import { type BranchConfig } from './types.js';
 import { lintBranchName, loadConfig } from './utils.js';
 
 export interface ValidationResult {
@@ -33,9 +33,9 @@ export class BranchValidator {
    */
   validate(branchName: string): ValidationResult {
     const lintResult = lintBranchName(branchName, this.config);
-    
+
     const result: ValidationResult = {
-      valid: lintResult.isValid
+      valid: lintResult.isValid,
     };
 
     if (lintResult.errors.length > 0) {
@@ -43,7 +43,7 @@ export class BranchValidator {
       result.suggestions = [
         'Try using one of the configured branch types',
         'Ensure description follows the configured style',
-        'Check maximum description length'
+        'Check maximum description length',
       ];
     }
 

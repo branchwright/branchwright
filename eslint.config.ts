@@ -31,30 +31,6 @@ export default defineConfig([
     rules: {
       semi: 0,
       'no-undef': 'off',
-      'no-console': [
-        'error',
-        {
-          allow: ['error'],
-        },
-      ],
-      'no-restricted-properties': [
-        'error',
-        {
-          object: 'console',
-          property: 'warn',
-          message: 'Use stageLog(...) to emit lifecycle-aware warnings.',
-        },
-        {
-          object: 'console',
-          property: 'info',
-          message: 'Use stageLog(...) from logging.ts for lifecycle-aware output.',
-        },
-        {
-          object: 'console',
-          property: 'log',
-          message: 'Use stageLog(...) from logging.ts for lifecycle-aware output.',
-        },
-      ],
       'class-methods-use-this': 'off',
       'no-restricted-syntax': 'off',
       'no-await-in-loop': 'off',

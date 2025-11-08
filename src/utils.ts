@@ -2,8 +2,8 @@ import { existsSync } from 'fs';
 import path from 'path';
 import { pathToFileURL } from 'url';
 
-import type { BranchIgnorePattern, BranchConfig, DescriptionStyle } from './types.js';
 import { DEFAULT_CONFIG } from './config.js';
+import type { BranchConfig, BranchIgnorePattern, DescriptionStyle } from './types.js';
 
 const GLOB_ESCAPE_REGEX = /[.*+?^${}()|[\]\\]/g;
 
@@ -46,7 +46,7 @@ function splitIntoWords(raw: string): string[] {
 
   return spaced
     .split(/\s+/)
-    .map(segment => segment.replace(/[^A-Za-z0-9]/g, ''))
+    .map((segment) => segment.replace(/[^A-Za-z0-9]/g, ''))
     .filter(Boolean);
 }
 
@@ -82,11 +82,11 @@ export function applyDescriptionStyle(raw: string, style: DescriptionStyle): str
 
   switch (style) {
     case 'kebab-case':
-      return words.map(word => word.toLowerCase()).join('-');
+      return words.map((word) => word.toLowerCase()).join('-');
     case 'snake_case':
-      return words.map(word => word.toLowerCase()).join('_');
+      return words.map((word) => word.toLowerCase()).join('_');
     case 'PascalCase':
-      return words.map(word => capitalizeWord(word)).join('');
+      return words.map((word) => capitalizeWord(word)).join('');
     case 'camelCase':
       return words
         .map((word, index) => {
@@ -101,12 +101,7 @@ export function applyDescriptionStyle(raw: string, style: DescriptionStyle): str
   }
 }
 
-export function buildBranchName(
-  branchType: string,
-  description: string,
-  ticketId?: string,
-  template?: string
-): string {
+export function buildBranchName(branchType: string, description: string, ticketId?: string, template?: string): string {
   // If no template is provided, use legacy format
   if (!template) {
     const parts = [branchType];
@@ -122,11 +117,11 @@ export function buildBranchName(
     type: branchType,
     desc: description,
   };
-  
+
   if (ticketId) {
     placeholders.ticket = ticketId;
   }
-  
+
   return buildBranchNameFromTemplate(template, placeholders);
 }
 
@@ -136,10 +131,7 @@ export interface TemplatePlaceholders {
   desc: string;
 }
 
-export function buildBranchNameFromTemplate(
-  template: string, 
-  placeholders: TemplatePlaceholders
-): string {
+export function buildBranchNameFromTemplate(template: string, placeholders: TemplatePlaceholders): string {
   let result = template;
 
   // Replace all placeholders
@@ -163,9 +155,7 @@ function normalizeIgnoredBranches(input: IgnoredBranchesInput): BranchConfig['ig
     return DEFAULT_CONFIG.ignoredBranches;
   }
 
-  return input.filter(
-    (entry): entry is string | RegExp => typeof entry === 'string' || entry instanceof RegExp
-  );
+  return input.filter((entry): entry is string | RegExp => typeof entry === 'string' || entry instanceof RegExp);
 }
 
 export async function loadConfig(): Promise<BranchConfig> {
@@ -202,7 +192,7 @@ export function lintBranchName(branchName: string, config: BranchConfig): LintRe
   const errors: string[] = [];
 
   // Check if branch should be ignored
-  const isIgnored = config.ignoredBranches.some(pattern => matchesPattern(branchName, pattern));
+  const isIgnored = config.ignoredBranches.some((pattern) => matchesPattern(branchName, pattern));
   if (isIgnored) {
     return { isValid: true, errors: [] };
   }
@@ -218,7 +208,7 @@ export function lintBranchName(branchName: string, config: BranchConfig): LintRe
   const [branchType, ...rest] = parts;
 
   // Validate branch type
-  const validTypes = config.branchTypes.map(type => type.name);
+  const validTypes = config.branchTypes.map((type) => type.name);
   if (!validTypes.includes(branchType)) {
     errors.push(`Invalid branch type "${branchType}". Valid types: ${validTypes.join(', ')}`);
   }
@@ -228,9 +218,7 @@ export function lintBranchName(branchName: string, config: BranchConfig): LintRe
 
   // Validate description length
   if (description.length > config.maxDescriptionLength) {
-    errors.push(
-      `Description "${description}" exceeds maximum length of ${config.maxDescriptionLength} characters`
-    );
+    errors.push(`Description "${description}" exceeds maximum length of ${config.maxDescriptionLength} characters`);
   }
 
   // Validate description style
@@ -238,7 +226,7 @@ export function lintBranchName(branchName: string, config: BranchConfig): LintRe
     const corrected = applyDescriptionStyle(description, config.descriptionStyle);
     errors.push(
       `Description "${description}" does not match required style "${config.descriptionStyle}". ` +
-        `Suggested: "${corrected}"`
+        `Suggested: "${corrected}"`,
     );
   }
 
@@ -259,10 +247,7 @@ export interface ParsedDescription {
   ticketError?: string | undefined;
 }
 
-export function parseUserDescription(
-  input: string,
-  config: BranchConfig
-): ParsedDescription {
+export function parseUserDescription(input: string, config: BranchConfig): ParsedDescription {
   const trimmed = input.trim();
 
   if (!trimmed) {

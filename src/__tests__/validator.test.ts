@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { BranchValidator } from '../validator';
-import { BranchConfig } from '../types';
+import { beforeEach, describe, expect, it } from 'vitest';
+
+import { type BranchConfig } from '../types';
 
 describe('BranchValidator', () => {
   let validator: BranchValidator;
@@ -11,13 +11,9 @@ describe('BranchValidator', () => {
 
   describe('validate', () => {
     it('should validate correct branch names', () => {
-      const validNames = [
-        'feat/user-authentication',
-        'fix/login-error',
-        'chore/update-dependencies',
-      ];
+      const validNames = ['feat/user-authentication', 'fix/login-error', 'chore/update-dependencies'];
 
-      validNames.forEach(name => {
+      validNames.forEach((name) => {
         const result = validator.validate(name);
         expect(result.valid).toBe(true);
         expect(result.message).toBeUndefined();
@@ -32,7 +28,7 @@ describe('BranchValidator', () => {
         'feat/this-description-is-way-too-long-for-the-default-limit', // too long
       ];
 
-      invalidNames.forEach(name => {
+      invalidNames.forEach((name) => {
         const result = validator.validate(name);
         expect(result.valid).toBe(false);
         expect(result.message).toBeDefined();

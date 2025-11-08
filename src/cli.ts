@@ -1,22 +1,18 @@
 #!/usr/bin/env node
 
+import chalk from 'chalk';
 import { Command } from 'commander';
-import { Branchwright } from './branchwright.js';
-import { BranchConfig, BranchType } from './types.js';
 import fs from 'fs';
 import path from 'path';
-import chalk from 'chalk';
+
+import { Branchwright } from './branchwright.js';
+import { type BranchConfig, type BranchType } from './types.js';
 
 const program = new Command();
 
 // Load configuration from package.json or .branchwright config file
 function loadConfig(): { config?: BranchConfig; types?: BranchType[] } {
-  const configPaths = [
-    '.branchwright.json',
-    '.branchwright.js',
-    'branchwright.config.json',
-    'branchwright.config.js',
-  ];
+  const configPaths = ['.branchwright.json', '.branchwright.js', 'branchwright.config.json', 'branchwright.config.js'];
 
   // Check for config in package.json
   try {
@@ -27,7 +23,7 @@ function loadConfig(): { config?: BranchConfig; types?: BranchType[] } {
         return packageJson.branchwright;
       }
     }
-  } catch (error) {
+  } catch {
     // Ignore package.json parsing errors
   }
 
@@ -52,10 +48,7 @@ function loadConfig(): { config?: BranchConfig; types?: BranchType[] } {
   return {};
 }
 
-program
-  .name('branchwright')
-  .description('Git branch name linting and interactive branch creation')
-  .version('1.0.0');
+program.name('branchwright').description('Git branch name linting and interactive branch creation').version('1.0.0');
 
 program
   .command('create')
@@ -64,7 +57,7 @@ program
   .option('-b, --base <branch>', 'Base branch to create from')
   .option('-n, --no-checkout', "Don't checkout to the new branch after creation")
   .option('--dry-run', 'Show what would be done without actually creating the branch')
-  .action(async options => {
+  .action(async (options) => {
     try {
       const config = loadConfig();
       const branchwright = new Branchwright(config);
@@ -79,9 +72,7 @@ program
         console.log(chalk.green(`\n✓ Branch "${branchName}" created successfully!`));
       }
     } catch (error) {
-      console.error(
-        chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
-      );
+      console.error(chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
       process.exit(1);
     }
   });
@@ -101,7 +92,7 @@ program
         const { simpleGit } = await import('simple-git');
         const git = simpleGit(process.cwd());
         const branches = await git.branchLocal();
-        branchNames = branches.all.filter(branch => branch !== 'HEAD');
+        branchNames = branches.all.filter((branch) => branch !== 'HEAD');
       } else if (branchNames.length === 0) {
         const { simpleGit } = await import('simple-git');
         const git = simpleGit(process.cwd());
@@ -122,7 +113,7 @@ program
 
           if (validation.suggestions) {
             console.log(chalk.yellow('  Suggestions:'));
-            validation.suggestions.forEach(suggestion => {
+            validation.suggestions.forEach((suggestion) => {
               console.log(chalk.yellow(`    - ${suggestion}`));
             });
           }
@@ -136,9 +127,7 @@ program
         console.log(chalk.green(`\n✓ All ${branchNames.length} branch name(s) are valid!`));
       }
     } catch (error) {
-      console.error(
-        chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
-      );
+      console.error(chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
       process.exit(1);
     }
   });
@@ -158,10 +147,7 @@ program
 
       const defaultConfig = {
         config: {
-          patterns: [
-            '^(feature|bugfix|hotfix|release|chore)/.+$',
-            '^(feat|fix|docs|style|refactor|test|chore)/.+$',
-          ],
+          patterns: ['^(feature|bugfix|hotfix|release|chore)/.+$', '^(feat|fix|docs|style|refactor|test|chore)/.+$'],
           maxLength: 100,
           minLength: 3,
           lowercase: true,
@@ -206,9 +192,7 @@ program
       console.log(chalk.green(`✓ Created ${configPath}`));
       console.log(chalk.blue('You can customize the configuration by editing this file.'));
     } catch (error) {
-      console.error(
-        chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
-      );
+      console.error(chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
       process.exit(1);
     }
   });
@@ -222,9 +206,7 @@ program
       console.log(chalk.blue('Current configuration:'));
       console.log(JSON.stringify(config, null, 2));
     } catch (error) {
-      console.error(
-        chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
-      );
+      console.error(chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
       process.exit(1);
     }
   });

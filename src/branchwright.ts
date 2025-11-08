@@ -1,7 +1,7 @@
-import { BranchValidator } from './validator.js';
 import { BranchCreator } from './creator.js';
-import { BranchConfig } from './types.js';
+import { type BranchConfig } from './types.js';
 import { loadConfig } from './utils.js';
+import { BranchValidator } from './validator.js';
 
 export interface BranchwrightOptions {
   config?: BranchConfig;
@@ -24,7 +24,7 @@ export class Branchwright {
    * Initialize with config from file
    */
   static async create(options: BranchwrightOptions = {}): Promise<Branchwright> {
-    const config = options.config || await loadConfig();
+    const config = options.config || (await loadConfig());
     return new Branchwright({ ...options, config });
   }
 

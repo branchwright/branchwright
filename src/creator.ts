@@ -1,13 +1,9 @@
-import inquirer from 'inquirer';
-import { simpleGit, SimpleGit } from 'simple-git';
-import type { BranchTypeOption, TicketIdPromptMode, BranchConfig } from './types.js';
-import { 
-  buildBranchName, 
-  loadConfig, 
-  parseUserDescription,
-  type ParsedDescription 
-} from './utils.js';
 import chalk from 'chalk';
+import inquirer from 'inquirer';
+import { type SimpleGit, simpleGit } from 'simple-git';
+
+import type { BranchConfig, BranchTypeOption, TicketIdPromptMode } from './types.js';
+import { type ParsedDescription, buildBranchName, loadConfig, parseUserDescription } from './utils.js';
 
 export interface CreateBranchOptions {
   /** Whether to create and switch to the branch */
@@ -48,11 +44,11 @@ export class BranchCreator {
         type: 'list',
         name: 'selectedName',
         message: 'Select branch type',
-        choices: branchTypes.map(type => ({ name: type.label, value: type.name })),
+        choices: branchTypes.map((type) => ({ name: type.label, value: type.name })),
       },
     ]);
 
-    const selected = branchTypes.find(type => type.name === answers.selectedName);
+    const selected = branchTypes.find((type) => type.name === answers.selectedName);
 
     if (!selected) {
       throw new Error(`Unable to resolve branch type for selection: ${answers.selectedName}`);
@@ -67,9 +63,7 @@ export class BranchCreator {
     }
 
     const promptMessage =
-      mode === 'required'
-        ? 'Enter ticket ID (required)'
-        : 'Enter ticket ID (optional, leave blank to skip)';
+      mode === 'required' ? 'Enter ticket ID (required)' : 'Enter ticket ID (optional, leave blank to skip)';
 
     while (true) {
       const answers = await inquirer.prompt([
@@ -115,10 +109,7 @@ export class BranchCreator {
     }
   }
 
-  async promptForDescription(
-    config: BranchConfig,
-    ticketId: string
-  ): Promise<ParsedDescription> {
+  async promptForDescription(config: BranchConfig, ticketId: string): Promise<ParsedDescription> {
     const hasTicketPrefix = Boolean(ticketId);
     const promptMessage = hasTicketPrefix
       ? 'Enter branch description'
@@ -170,10 +161,7 @@ export class BranchCreator {
       const branchType = await this.promptForBranchType(config.branchTypes);
 
       // Step 2: Get ticket ID if configured
-      const ticketId = await this.promptForTicketId(
-        config.ticketIdPrompt, 
-        config.ticketIdPrefix
-      );
+      const ticketId = await this.promptForTicketId(config.ticketIdPrompt, config.ticketIdPrefix);
 
       // Step 3: Get description
       const descriptionResult = await this.promptForDescription(config, ticketId);
@@ -193,7 +181,7 @@ export class BranchCreator {
         branchType.name,
         descriptionResult.description,
         finalTicketId,
-        config.template
+        config.template,
       );
 
       console.log(chalk.green(`Generated branch name: ${branchName}`));
@@ -228,8 +216,6 @@ export class BranchCreator {
         },
       ]);
 
-
-
       // Check if branch already exists
       const branches = await this.git.branchLocal();
       if (branches.all.includes(branchName)) {
@@ -239,11 +225,7 @@ export class BranchCreator {
 
       // Create the branch
       if (options.dryRun) {
-        console.log(
-          chalk.blue(
-            `[DRY RUN] Would create branch: ${branchName} from ${confirmAnswers.baseBranch}`
-          )
-        );
+        console.log(chalk.blue(`[DRY RUN] Would create branch: ${branchName} from ${confirmAnswers.baseBranch}`));
         if (confirmAnswers.checkout) {
           console.log(chalk.blue(`[DRY RUN] Would checkout to: ${branchName}`));
         }
@@ -264,9 +246,7 @@ export class BranchCreator {
 
       return branchName;
     } catch (error) {
-      console.error(
-        chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
-      );
+      console.error(chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
       return null;
     }
   }
