@@ -1,7 +1,8 @@
 {
-  "name": "branchwright",
-  "version": "0.0.0",
+  "name": "@branchwright/cli",
+  "version": "0.0.0-development",
   "description": "Git branch name linting and interactive branch creation tool",
+  "private": false,
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",
@@ -16,7 +17,7 @@
     "branchwright": "./dist/cjs/cli.js"
   },
   "files": [
-    "dist/",
+    "dist",
     "README.md",
     "LICENSE"
   ],
