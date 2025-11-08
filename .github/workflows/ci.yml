@@ -12,4 +12,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: npm ci
-      - run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.sha }}
+      - uses: wagoid/commitlint-github-action@v4
+        with:
+          configFile: commitlint.config.ts
+          token: ${{ secrets.GITHUB_TOKEN }}
