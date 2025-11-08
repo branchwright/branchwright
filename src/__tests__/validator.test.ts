@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { type BranchConfig } from '../types';
+import { BranchValidator } from '../validator';
 
 describe('BranchValidator', () => {
   let validator: BranchValidator;
