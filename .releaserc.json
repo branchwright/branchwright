@@ -1,0 +1,40 @@
+{
+  "branches": ["main", { "name": "next", "prerelease": true, "channel": "next" }],
+  "tagFormat": "v${version}",
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    [
+      "@semantic-release/changelog",
+      {
+        "changelogFile": "CHANGELOG.md",
+        "changelogTitle": "# Changelog\n\nAll notable changes to this project will be documented in this file.\n\nThe format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),\nand this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)."
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "tsx scripts/update-version.ts ${nextRelease.version}"
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": ["CHANGELOG.md", "package.json"],
+        "message": "chore(release): v${nextRelease.version}"
+      }
+    ],
+    [
+        "@semantic-release/github",
+        {
+          "assets": [
+            "dist/**",
+            "package.json",
+            "README.md",
+            "LICENSE",
+            "CHANGELOG.md"
+          ]
+        }
+    ]
+  ]
+}
