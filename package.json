@@ -1,0 +1,48 @@
+{
+  "name": "branchwright",
+  "version": "0.0.0",
+  "description": "Git branch name linting and interactive branch creation tool",
+  "keywords": [
+    "git",
+    "branch",
+    "lint",
+    "commitizen",
+    "commitlint",
+    "cli",
+    "typescript",
+    "interactive"
+  ],
+  "author": "Sander Timmermans <sander.timmermans@hotmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/branchwright/branchwright.git"
+  },
+  "bugs": {
+    "url": "https://github.com/branchwright/branchwright/issues"
+  },
+  "homepage": "https://github.com/branchwright/branchwright#readme",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=9.0.0"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.1.0",
+    "@commitlint/config-conventional": "^20.0.0",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/exec": "^7.1.0",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^12.0.2",
+    "@types/node": "^20.0.0",
+    "commitizen": "^4.3.1",
+    "cz-git": "^1.12.0",
+    "husky": "^9.1.7",
+    "semantic-release": "^25.0.2",
+    "typescript": "^5.9.3"
+  },
+  "config": {
+    "commitizen": {
+      "path": "node_modules/cz-git"
+    }
+  }
+}

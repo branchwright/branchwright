@@ -1,0 +1,85 @@
+# Ignore dependencies
+node_modules/
+
+# Ignore build output
+dist/
+*.tsbuildinfo
+
+# Ignore IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Ignore logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignore runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Ignore coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# Ignore nyc test coverage
+.nyc_output
+
+# Ignore dependency directories
+jspm_packages/
+
+# Ignore optional npm cache directory
+.npm
+
+# Ignore optional eslint cache
+.eslintcache
+
+# Ignore optional REPL history
+.node_repl_history
+
+# Ignore output of 'npm pack'
+*.tgz
+
+# Ignore Yarn Integrity file
+.yarn-integrity
+
+# Ignore dotenv environment variables file
+.env
+.env.test
+
+# Ignore parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# Ignore next.js build output
+.next
+
+# Ignore nuxt.js build output
+.nuxt
+
+# Ignore vuepress build output
+.vuepress/dist
+
+# Ignore Serverless directories
+.serverless/
+
+# Ignore FuseBox cache
+.fusebox/
+
+# Ignore DynamoDB Local files
+.dynamodb/
+
+# Ignore OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
