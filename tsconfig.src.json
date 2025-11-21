@@ -26,6 +26,11 @@
     "noFallthroughCasesInSwitch": true,
     "exactOptionalPropertyTypes": true,
     "types": ["node", "vitest/globals"]
+    ,
+    "baseUrl": "./",
+    "paths": {
+      "inquirer": ["node_modules/inquirer/dist/index.d.ts"]
+    }
   },
   "include": [
     "src/**/*"

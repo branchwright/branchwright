@@ -1,4 +1,4 @@
-import { defineConfig } from './src/config.js';
+import { defineConfig } from '@branchwright/cli';
 
 export default defineConfig({
   branchTypes: [
