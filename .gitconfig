@@ -1,2 +1,3 @@
 [alias]
 cz = !npx cz
+brw = !npm exec brw

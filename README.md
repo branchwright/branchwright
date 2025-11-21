@@ -540,4 +540,4 @@ Inspired by:
 
 ---
 
-**Made with ❤️ by the Branchwright team**
+**Developed and Maintained by Noldaru**
