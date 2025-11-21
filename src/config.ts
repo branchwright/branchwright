@@ -7,21 +7,39 @@ export const DEFAULT_CONFIG: BranchConfig = {
     { name: 'chore', label: 'Chore' },
   ],
   maxDescriptionLength: 24,
-  ticketIdPrompt: 'optional',
-  ticketIdPrefix: undefined,
   ignoredBranches: ['main', 'master', 'next', 'dev', 'develop', 'release/*'],
   descriptionStyle: 'kebab-case',
   template: '{{type}}/{{desc}}',
+  plugins: [],
+  presets: ['recommended'],
+  rules: {},
+  // Legacy support - will be overridden by rules.ticketId if present
+  ticketIdPrompt: 'optional',
+  ticketIdPrefix: undefined,
 };
 
 export function defineConfig(config: Partial<BranchConfig>): BranchConfig {
-  return {
+  const result: BranchConfig = {
     branchTypes: config.branchTypes ?? DEFAULT_CONFIG.branchTypes,
     maxDescriptionLength: config.maxDescriptionLength ?? DEFAULT_CONFIG.maxDescriptionLength,
-    ticketIdPrompt: config.ticketIdPrompt ?? DEFAULT_CONFIG.ticketIdPrompt,
-    ticketIdPrefix: config.ticketIdPrefix ?? DEFAULT_CONFIG.ticketIdPrefix,
     ignoredBranches: config.ignoredBranches ?? DEFAULT_CONFIG.ignoredBranches,
     descriptionStyle: config.descriptionStyle ?? DEFAULT_CONFIG.descriptionStyle,
     template: config.template ?? DEFAULT_CONFIG.template,
+    plugins: config.plugins ?? DEFAULT_CONFIG.plugins,
+    presets: config.presets ?? DEFAULT_CONFIG.presets,
+    rules: {
+      ...DEFAULT_CONFIG.rules,
+      ...config.rules,
+    },
   };
+
+  // Handle legacy properties for backward compatibility
+  if (config.ticketIdPrompt !== undefined) {
+    result.ticketIdPrompt = config.ticketIdPrompt;
+  }
+  if (config.ticketIdPrefix !== undefined) {
+    result.ticketIdPrefix = config.ticketIdPrefix;
+  }
+
+  return result;
 }

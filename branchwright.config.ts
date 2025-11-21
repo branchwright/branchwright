@@ -13,14 +13,11 @@ export default defineConfig({
     { name: 'revert', label: 'revert:   Revert a previous commit' },
   ],
   maxDescriptionLength: 24,
-  ticketIdPrompt: 'optional',
-  ticketIdPrefix: 'NPXR-',
   ignoredBranches: ['main', 'next', 'dev'],
   descriptionStyle: 'kebab-case',
-  
-  // Template for branch name format using placeholders:
-  // {{type}} - Branch type (feat, fix, etc.)
-  // {{ticket}} - Ticket ID (optional, e.g. NPXR-123)
-  // {{desc}} - Description
-  template: '{{type}}/{{ticket}}-{{desc}}'
+  template: '{{type}}/{{ticket}}-{{desc}}',
+  presets: ['recommended'],
+  rules: {
+    ticketId: 'off',
+  },
 });

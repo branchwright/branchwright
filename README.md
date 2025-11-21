@@ -40,23 +40,25 @@ npm install --save-dev branchwright
 
 ```bash
 # Create a new branch interactively
-branchwright create
+brw create
 
 # Validate current branch
-branchwright lint
+brw lint
 
 # Validate specific branches
-branchwright lint feature/user-auth bugfix/login-error
+brw lint feature/user-auth bugfix/login-error
 
 # Validate all local branches
-branchwright lint --all
+brw lint --all
 
 # Initialize configuration
-branchwright init
+brw init
 
 # View current configuration
-branchwright config
+brw config
 ```
+
+> The CLI is available as both `brw` and `branchwright`; the shorter alias is shown in the examples above.
 
 ### Programmatic Usage
 
@@ -67,7 +69,7 @@ import { Branchwright } from 'branchwright';
 const branchwright = new Branchwright();
 
 // Validate a branch name
-const result = branchwright.validate('feature/user-authentication');
+const result = await branchwright.validate('feature/user-authentication');
 if (result.valid) {
   console.log('✓ Branch name is valid');
 } else {
@@ -78,6 +80,70 @@ if (result.valid) {
 const newBranch = await branchwright.create();
 console.log(`Created branch: ${newBranch}`);
 ```
+
+### Custom Rules
+
+Branchwright ships with a registry-driven rule system. You can define additional rules and compose them with the core set:
+
+```typescript
+import { coreRuleRegistry, createRegistry, defineRule, evaluateRules } from 'branchwright';
+
+const noWipRule = defineRule(
+  {
+    id: 'no-wip',
+    meta: {
+      title: 'Disallow WIP branches',
+      description: 'Prevents work-in-progress markers from shipping to main.',
+    },
+    defaultSeverity: 'required',
+  },
+  (context) => {
+    if (context.branchName.includes('wip')) {
+      return { message: 'Remove "wip" from the branch name.' };
+    }
+
+    return null;
+  },
+);
+
+const registry = createRegistry(...coreRuleRegistry.entries(), noWipRule);
+const config = branchwright.getValidator().getConfig();
+const violations = await evaluateRules('feat/wip-experiment', config, registry);
+
+if (violations.length) {
+  console.warn(violations.map((violation) => violation.message));
+}
+```
+
+Rule evaluators receive an immutable context and JSON-serializable options. They must remain side-effect free—interacting with the filesystem, spawning processes, or mutating shared state is blocked by runtime guardrails.
+
+### Rule extensions & presets
+
+You can load additional rule definition sets and presets directly from configuration:
+
+```typescript
+import { defineConfig } from 'branchwright';
+
+export default defineConfig({
+  plugins: [
+    './config/rules/no-wip-plugin.ts',
+    '@acme/branchwright-rules',
+  ],
+  presets: [
+    'recommended',
+    '@acme/branchwright-preset',
+  ],
+  rules: {
+    'no-wip': 'required',
+    ticketId: ['optional', { prefix: 'ABC-' }],
+  },
+});
+```
+
+- **`plugins`** expects module specifiers (local paths or packages) that default export a rule definition set. The export can be an array of `defineRule` results, a `RuleRegistry`, or `{ rules: [...] }`.
+- **`presets`** merge rule severity defaults. Combine built-in presets such as `'recommended'` with package/local presets; later entries override earlier ones, and explicit `rules` overrides still win.
+
+Relative paths resolve from the config file location (or `cwd` when provided programmatically).
 
 ## Configuration
 
@@ -92,6 +158,7 @@ Add a `branchwright` section to your `package.json`:
   "branchwright": {
     "config": {
       "patterns": [
+
         "^(feature|bugfix|hotfix|release|chore)/.+$"
       ],
       "maxLength": 100,
@@ -153,6 +220,13 @@ branchwright init
 | `disallowed` | `string[]` | `[' ', '..', '~', '^', ':', '[', ']', '?', '*', '\\\\']` | Disallowed characters |
 | `customValidation` | `function` | `undefined` | Custom validation function |
 
+### Rule Extension Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `plugins` | `string[]` | `[]` | Additional rule definition modules (local file paths or npm packages) loaded alongside the core rules. |
+| `presets` | `string[]` | `['recommended']` | Rule preset identifiers merged in order; built-ins like `'recommended'` can be combined with custom packages. |
+| `rules` | `Record<string, RuleConfig>` | `{}` | Explicit rule overrides applied after presets. |
 ### Branch Types
 
 Define the types of branches available during interactive creation:

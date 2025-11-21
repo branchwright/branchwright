@@ -2,6 +2,8 @@ import chalk from 'chalk';
 import inquirer from 'inquirer';
 import { type SimpleGit, simpleGit } from 'simple-git';
 
+import { coreRules } from './rules/core.js';
+import { resolveRuleConfig } from './rules/index.js';
 import type { BranchConfig, BranchTypeOption, TicketIdPromptMode } from './types.js';
 import { type ParsedDescription, buildBranchName, loadConfig, parseUserDescription } from './utils.js';
 
@@ -161,7 +163,11 @@ export class BranchCreator {
       const branchType = await this.promptForBranchType(config.branchTypes);
 
       // Step 2: Get ticket ID if configured
-      const ticketId = await this.promptForTicketId(config.ticketIdPrompt, config.ticketIdPrefix);
+      const ticketIdRule = resolveRuleConfig(config, coreRules.ticketId);
+      const ticketId = await this.promptForTicketId(
+        ticketIdRule.severity === 'off' ? 'skip' : ticketIdRule.severity,
+        ticketIdRule.options?.prefix || '',
+      );
 
       // Step 3: Get description
       const descriptionResult = await this.promptForDescription(config, ticketId);
