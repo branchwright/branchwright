@@ -1,7 +1,46 @@
 {
-  "name": "branchwright",
-  "version": "0.0.0",
+  "name": "@branchwright/cli",
+  "version": "0.0.0-development",
   "description": "Git branch name linting and interactive branch creation tool",
+  "private": false,
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "types": "./dist/types/index.d.ts"
+    }
+  },
+  "bin": {
+    "brw": "dist/cjs/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "npm run clean && npm run build:types && npm run build:esm && npm run build:cjs",
+    "build:types": "tsc -p tsconfig.src.json --emitDeclarationOnly --outDir dist/types",
+    "build:esm": "tsc -p tsconfig.src.json --module esnext --moduleResolution bundler --outDir dist/esm",
+    "build:cjs": "tsc -p tsconfig.src.json --module commonjs --moduleResolution node --outDir dist/cjs && npm run build:cjs:package",
+    "build:cjs:package": "echo '{\"type\":\"commonjs\"}' > dist/cjs/package.json",
+    "clean": "rimraf dist/",
+    "dev": "npm run build && node dist/cjs/cli.js",
+    "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings 0",
+    "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,json,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,json,md}\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "type-check": "tsc --noEmit",
+    "quality": "npm run lint && npm run format:check && npm run type-check && npm run test",
+    "prepublishOnly": "npm run quality && npm run build",
+    "release": "npm run quality && npm run build && npm publish"
+  },
   "keywords": [
     "git",
     "branch",
@@ -16,15 +55,23 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/branchwright/branchwright.git"
+    "url": "git+https://github.com/branchwright/branchwright.git"
   },
   "bugs": {
     "url": "https://github.com/branchwright/branchwright/issues"
   },
   "homepage": "https://github.com/branchwright/branchwright#readme",
   "engines": {
-    "node": ">=20.0.0",
+    "node": ">=20.12.0",
     "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^8.0.1",
+    "chalk": "^5.6.2",
+    "commander": "^14.0.2",
+    "cosmiconfig": "^9.0.0",
+    "inquirer": "^13.0.1",
+    "simple-git": "^3.30.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.1.0",
@@ -33,12 +80,24 @@
     "@semantic-release/exec": "^7.1.0",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^12.0.2",
+    "@trivago/prettier-plugin-sort-imports": "^6.0.0",
     "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.3",
+    "@typescript-eslint/parser": "^8.46.3",
     "commitizen": "^4.3.1",
     "cz-git": "^1.12.0",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-import-resolver-typescript": "^4.4.4",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-prettier": "^5.5.4",
     "husky": "^9.1.7",
+    "prettier": "^3.6.2",
+    "rimraf": "^6.1.0",
     "semantic-release": "^25.0.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.3",
+    "vitest": "^4.0.8"
   },
   "config": {
     "commitizen": {

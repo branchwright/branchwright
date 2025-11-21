@@ -1,0 +1,14 @@
+# Ignore build outputs
+dist/
+coverage/
+*.tsbuildinfo
+
+# Ignore dependencies
+node_modules/
+
+# Ignore logs
+*.log
+
+# Ignore config files that shouldn't be formatted
+.eslintrc.js
+jest.config.js
