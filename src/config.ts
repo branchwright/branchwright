@@ -13,6 +13,12 @@ export const DEFAULT_CONFIG: BranchConfig = {
   plugins: [],
   presets: ['recommended'],
   rules: {},
+  extraQuestions: {
+    baseBranch: false,
+    checkout: false,
+    pushToRemote: false,
+  },
+  questions: {},
   // Legacy support - will be overridden by rules.ticketId if present
   ticketIdPrompt: 'optional',
   ticketIdPrefix: undefined,
@@ -30,6 +36,14 @@ export function defineConfig(config: Partial<BranchConfig>): BranchConfig {
     rules: {
       ...DEFAULT_CONFIG.rules,
       ...config.rules,
+    },
+    extraQuestions: {
+      ...DEFAULT_CONFIG.extraQuestions,
+      ...config.extraQuestions,
+    },
+    questions: {
+      ...DEFAULT_CONFIG.questions,
+      ...config.questions,
     },
   };
 
