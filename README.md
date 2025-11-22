@@ -9,535 +9,494 @@
 [![Release](https://github.com/branchwright/branchwright/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/branchwright/branchwright/actions/workflows/release.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6)](https://www.typescriptlang.org/)
 
-Branchwright helps teams maintain consistent Git branch naming conventions by providing:
-- 🔍 **Branch name linting** - Validate existing branch names
-- ✨ **Interactive branch creation** - Guided branch creation workflow
-- ⚙️ **Configurable rules** - Customize patterns and validation rules
-- 🚀 **CLI & API** - Use as a command-line tool or integrate programmatically
-- 📦 **TypeScript support** - Full TypeScript definitions included
+**Branchwright** helps teams maintain consistent Git branch naming conventions with a streamlined, interactive workflow:
 
-## Features
-
-- **Dual Package Support**: Works with both ESM and CommonJS (Node.js 12+)
-- **Interactive Prompts**: User-friendly branch creation with inquirer
-- **Flexible Validation**: Configurable patterns, length limits, and custom rules
-- **Git Integration**: Seamlessly works with your existing Git workflow
-- **Zero Dependencies in Production**: Lightweight with minimal runtime dependencies
+- ✨ **Frictionless branch creation** - Smart defaults, minimal prompts
+- 🔍 **Branch name validation** - Lint existing branches against your rules
+- 🎯 **Extensible rules system** - Built-in rules plus custom rule plugins
+- ⚙️ **Template-based naming** - `{{type}}/{{ticket}}-{{desc}}` or any format you need
+- 🚀 **CLI & API** - Use standalone or integrate programmatically
+- 📦 **TypeScript-first** - Full type definitions included
 
 ## Installation
 
 ```bash
-# Install globally for CLI usage
-npm install -g branchwright
+# Global installation (recommended)
+npm install -g @branchwright/cli
 
-# Or install locally in your project
-npm install --save-dev branchwright
+# Project-local installation
+npm install --save-dev @branchwright/cli
+
+# Or use without installing
+npx @branchwright/cli create
 ```
 
 ## Quick Start
 
-### CLI Usage
+### Interactive Branch Creation
 
 ```bash
-# Create a new branch interactively
+# If installed globally or locally
 brw create
 
+# Without installing (using npx)
+npx @branchwright/cli create
+```
+
+That's it! Branchwright will guide you through:
+1. Selecting a branch type (feat, fix, chore, etc.)
+2. Optionally entering a ticket ID
+3. Describing your branch
+4. Creating and switching to the new branch
+
+The tool uses **smart defaults** to minimize friction:
+- Base branch: current branch
+- Auto-checkout: yes
+- Push to remote: no (optional)
+
+### Validate Branch Names
+
+```bash
 # Validate current branch
 brw lint
 
-# Validate specific branches
-brw lint feature/user-auth bugfix/login-error
+# Validate specific branch
+brw lint feature/user-auth
 
-# Validate all local branches
+# Validate all branches
 brw lint --all
-
-# Initialize configuration
-brw init
-
-# View current configuration
-brw config
 ```
 
-> The CLI is available as both `brw` and `branchwright`; the shorter alias is shown in the examples above.
+## Configuration
 
-### Programmatic Usage
+Create `branchwright.config.ts` in your project root:
 
 ```typescript
-import { Branchwright } from 'branchwright';
+import { defineConfig } from '@branchwright/cli';
 
-// Create an instance with default configuration
-const branchwright = new Branchwright();
+export default defineConfig({
+  // Define your branch types
+  branchTypes: [
+    { name: 'feat', label: 'Feature' },
+    { name: 'fix', label: 'Bug Fix' },
+    { name: 'chore', label: 'Chore' },
+  ],
+  
+  // Customize branch name template
+  template: '{{type}}/{{ticket}}-{{desc}}',
+  
+  // Configure rules
+  rules: {
+    ticketId: ['optional', { prefix: 'PROJ-' }],
+  },
+  
+  // Control optional questions (all default to false)
+  extraQuestions: {
+    baseBranch: false,    // Ask which branch to base from
+    checkout: false,      // Ask whether to switch to new branch
+    pushToRemote: false,  // Ask whether to push to remote
+  },
+  
+  // Customize prompts (optional)
+  questions: {
+    branchType: 'What type of branch?',
+    description: 'Describe your change:',
+    pushToRemote: 'Push to origin?',
+  },
+});
+```
 
-// Validate a branch name
-const result = await branchwright.validate('feature/user-authentication');
-if (result.valid) {
-  console.log('✓ Branch name is valid');
-} else {
-  console.log(`✗ Invalid: ${result.message}`);
+### Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `branchTypes` | `BranchTypeOption[]` | `[feat, fix, chore]` | Available branch types for selection |
+| `template` | `string` | `'{{type}}/{{desc}}'` | Branch name template with placeholders |
+| `maxDescriptionLength` | `number` | `24` | Maximum description length |
+| `descriptionStyle` | `string` | `'kebab-case'` | Enforce case style: `kebab-case`, `snake_case`, `PascalCase`, `camelCase` |
+| `ignoredBranches` | `string[]` | `['main', 'master', 'next', 'dev']` | Branches to skip during validation |
+| `rules` | `Rules` | `{}` | Rule configuration (see Rules section) |
+| `extraQuestions` | `InteractiveQuestions` | All `false` | Enable optional prompts |
+| `questions` | `QuestionConfig` | `{}` | Customize prompt text |
+
+### Template System
+
+Use placeholders in your branch name template:
+
+- `{{type}}` - Branch type (feat, fix, etc.)
+- `{{ticket}}` - Ticket ID (if provided)
+- `{{desc}}` - Description
+
+**Examples:**
+```typescript
+// Simple format
+template: '{{type}}/{{desc}}'
+// Output: feat/user-authentication
+
+// With ticket
+template: '{{type}}/{{ticket}}-{{desc}}'
+// Output: feat/PROJ-123-user-authentication
+
+// Custom format
+template: '{{ticket}}/{{type}}-{{desc}}'
+// Output: PROJ-123/feat-user-authentication
+```
+
+### Interactive Questions
+
+Control which optional questions are shown during `brw create`:
+
+```typescript
+extraQuestions: {
+  baseBranch: true,    // Ask "Base branch?" (default: uses current branch)
+  checkout: true,      // Ask "Switch to new branch?" (default: yes)
+  pushToRemote: true,  // Ask "Push to remote?" (default: no)
 }
+```
 
-// Create a branch interactively
-const newBranch = await branchwright.create();
-console.log(`Created branch: ${newBranch}`);
+By default, all are `false` for a streamlined experience. The tool:
+- Uses your current branch as the base
+- Automatically switches to the new branch
+- Doesn't push to remote
+
+Enable questions only when you need that flexibility.
+
+### Customizing Prompts
+
+Override the default prompt text:
+
+```typescript
+questions: {
+  branchType: 'Select the type of work:',
+  ticketId: 'Ticket/issue number (optional):',
+  ticketIdRequired: 'Ticket/issue number:',
+  description: 'Brief description:',
+  descriptionWithTicket: 'Describe your changes:',
+  baseBranch: 'Create from which branch?',
+  checkout: 'Switch to this branch now?',
+  proceed: 'Create this branch?',
+  pushToRemote: 'Push to origin now?',
+}
+```
+
+## Rules System
+
+Branchwright includes a powerful, extensible rules engine for validation.
+
+### Built-in Rules
+
+**`ticketId`** - Validate ticket ID format and requirements
+
+```typescript
+rules: {
+  // Off: No ticket ID validation
+  ticketId: 'off',
+  
+  // Optional: Allow but don't require ticket IDs
+  ticketId: 'optional',
+  
+  // Required: Ticket ID must be present
+  ticketId: 'required',
+  
+  // With prefix validation
+  ticketId: ['optional', { prefix: 'PROJ-' }],
+  ticketId: ['required', { prefix: 'TEAM-' }],
+}
+```
+
+### Rule Configuration
+
+Rules accept three severity levels:
+- `'off'` - Rule is disabled
+- `'optional'` - Rule runs but doesn't block
+- `'required'` - Rule must pass
+
+Configuration formats:
+```typescript
+rules: {
+  myRule: true,                           // Boolean (true = required, false = off)
+  myRule: 'optional',                     // String severity
+  myRule: ['required', { option: 'val' }], // Tuple with options
+}
 ```
 
 ### Custom Rules
 
-Branchwright ships with a registry-driven rule system. You can define additional rules and compose them with the core set:
+Define your own validation rules:
 
 ```typescript
-import { coreRuleRegistry, createRegistry, defineRule, evaluateRules } from 'branchwright';
+import { defineRule, coreRuleRegistry, createRegistry } from '@branchwright/cli';
 
 const noWipRule = defineRule(
   {
     id: 'no-wip',
     meta: {
       title: 'Disallow WIP branches',
-      description: 'Prevents work-in-progress markers from shipping to main.',
+      description: 'Prevents work-in-progress markers from shipping.',
     },
     defaultSeverity: 'required',
   },
   (context) => {
     if (context.branchName.includes('wip')) {
-      return { message: 'Remove "wip" from the branch name.' };
+      return { 
+        message: 'Remove "wip" from the branch name.',
+        suggestions: [context.branchName.replace('wip', '')],
+      };
     }
-
-    return null;
+    return null; // Valid
   },
 );
 
+// Use with evaluateRules
 const registry = createRegistry(...coreRuleRegistry.entries(), noWipRule);
-const config = branchwright.getValidator().getConfig();
-const violations = await evaluateRules('feat/wip-experiment', config, registry);
-
-if (violations.length) {
-  console.warn(violations.map((violation) => violation.message));
-}
 ```
 
-Rule evaluators receive an immutable context and JSON-serializable options. They must remain side-effect free—interacting with the filesystem, spawning processes, or mutating shared state is blocked by runtime guardrails.
+### Rule Plugins
 
-### Rule extensions & presets
-
-You can load additional rule definition sets and presets directly from configuration:
+Load custom rules from external modules:
 
 ```typescript
-import { defineConfig } from 'branchwright';
-
+// branchwright.config.ts
 export default defineConfig({
   plugins: [
-    './config/rules/no-wip-plugin.ts',
-    '@acme/branchwright-rules',
-  ],
-  presets: [
-    'recommended',
-    '@acme/branchwright-preset',
+    './config/rules/company-rules.ts',  // Local file
+    '@acme/branchwright-rules',         // NPM package
   ],
   rules: {
     'no-wip': 'required',
-    ticketId: ['optional', { prefix: 'ABC-' }],
+    'acme/ticket-format': ['required', { pattern: /^[A-Z]+-\d+$/ }],
   },
 });
 ```
 
-- **`plugins`** expects module specifiers (local paths or packages) that default export a rule definition set. The export can be an array of `defineRule` results, a `RuleRegistry`, or `{ rules: [...] }`.
-- **`presets`** merge rule severity defaults. Combine built-in presets such as `'recommended'` with package/local presets; later entries override earlier ones, and explicit `rules` overrides still win.
+**Plugin format:**
+```typescript
+// company-rules.ts
+import { defineRule } from '@branchwright/cli';
 
-Relative paths resolve from the config file location (or `cwd` when provided programmatically).
-
-## Configuration
-
-Branchwright can be configured through several methods:
-
-### 1. Package.json
-
-Add a `branchwright` section to your `package.json`:
-
-```json
-{
-  "branchwright": {
-    "config": {
-      "patterns": [
-
-        "^(feature|bugfix|hotfix|release|chore)/.+$"
-      ],
-      "maxLength": 100,
-      "lowercase": true
-    }
-  }
-}
+export default [
+  defineRule(/* ... */),
+  defineRule(/* ... */),
+];
 ```
 
-### 2. Configuration File
+### Rule Presets
 
-Create a `.branchwright.json` file in your project root:
-
-```json
-{
-  "config": {
-    "patterns": [
-      "^(feature|bugfix|hotfix|release|chore)/.+$",
-      "^(feat|fix|docs|style|refactor|test)/.+$"
-    ],
-    "maxLength": 100,
-    "minLength": 5,
-    "lowercase": true,
-    "disallowed": [" ", "..", "~", "^", ":", "?", "*", "\\\\"]
-  },
-  "types": [
-    {
-      "type": "feature",
-      "name": "Feature",
-      "description": "A new feature or enhancement",
-      "pattern": "feature/{description}"
-    },
-    {
-      "type": "bugfix", 
-      "name": "Bug Fix",
-      "description": "A bug fix",
-      "pattern": "bugfix/{description}"
-    }
-  ]
-}
-```
-
-### 3. Initialize Default Config
-
-```bash
-branchwright init
-```
-
-## Configuration Options
-
-### Branch Config
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `patterns` | `string[]` | `['^(feature\\|bugfix\\|hotfix\\|release\\|chore)/.+$']` | Allowed branch name patterns (regex) |
-| `maxLength` | `number` | `100` | Maximum branch name length |
-| `minLength` | `number` | `3` | Minimum branch name length |
-| `lowercase` | `boolean` | `true` | Enforce lowercase branch names |
-| `disallowed` | `string[]` | `[' ', '..', '~', '^', ':', '[', ']', '?', '*', '\\\\']` | Disallowed characters |
-| `customValidation` | `function` | `undefined` | Custom validation function |
-
-### Rule Extension Options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `plugins` | `string[]` | `[]` | Additional rule definition modules (local file paths or npm packages) loaded alongside the core rules. |
-| `presets` | `string[]` | `['recommended']` | Rule preset identifiers merged in order; built-ins like `'recommended'` can be combined with custom packages. |
-| `rules` | `Record<string, RuleConfig>` | `{}` | Explicit rule overrides applied after presets. |
-### Branch Types
-
-Define the types of branches available during interactive creation:
+Combine multiple rule configurations:
 
 ```typescript
-interface BranchType {
-  type: string;           // Unique identifier
-  name: string;           // Display name
-  description: string;    // Description shown to user
-  pattern: string;        // Template pattern (use {description} placeholder)
-}
+export default defineConfig({
+  presets: [
+    'recommended',              // Built-in preset
+    '@acme/strict-preset',      // Package preset
+  ],
+  rules: {
+    // Override preset defaults
+    ticketId: 'required',
+  },
+});
 ```
 
-## Default Branch Types
+Presets are merged in order, with explicit `rules` taking final precedence.
 
-- **feature**: `feature/{description}` - New features or enhancements
-- **bugfix**: `bugfix/{description}` - Bug fixes
-- **hotfix**: `hotfix/{description}` - Urgent production fixes
-- **release**: `release/{description}` - Release branches
-- **chore**: `chore/{description}` - Maintenance tasks, refactoring
-- **docs**: `docs/{description}` - Documentation updates
+## CLI Reference
 
-## CLI Commands
-
-### `branchwright create`
+### `brw create`
 
 Create a new branch interactively.
 
-**Options:**
-- `-b, --base <branch>` - Base branch to create from (default: current branch)
-- `-n, --no-checkout` - Don't checkout to the new branch after creation
-- `--dry-run` - Show what would be done without creating the branch
+**Flags:**
+- `--base <branch>` - Specify base branch (overrides config)
+- `--dry-run` - Preview without creating the branch
 
 **Examples:**
 ```bash
-# Interactive creation from current branch
-branchwright create
+# Standard interactive creation
+brw create
 
-# Create from specific base branch
-branchwright create --base main
+# Create from specific base
+brw create --base main
 
-# Create without checking out
-branchwright create --no-checkout
-
-# Dry run to see what would happen
-branchwright create --dry-run
+# Preview what would be created
+brw create --dry-run
 ```
 
-### `branchwright lint`
+### `brw lint [branches...]`
 
-Validate branch names against configured rules.
+Validate branch names against your rules.
 
-**Options:**
-- `--all` - Validate all local branches
+**Flags:**
+- `--all` - Check all local branches
 
 **Examples:**
 ```bash
 # Validate current branch
-branchwright lint
+brw lint
 
 # Validate specific branches
-branchwright lint feature/auth bugfix/header-styling
+brw lint feature/auth fix/login-bug
 
-# Validate all local branches
-branchwright lint --all
+# Check all branches
+brw lint --all
 ```
 
-### `branchwright init`
+### `brw init`
 
-Initialize a configuration file with default settings.
+Generate a default `branchwright.config.ts` file.
 
-**Options:**
-- `-f, --format <format>` - Configuration format (currently supports 'json')
+### `brw config`
 
-### `branchwright config`
+Display your current configuration.
 
-Display the current configuration being used.
+## Programmatic API
 
-## API Reference
-
-### Class: `Branchwright`
+Use Branchwright in your Node.js code:
 
 ```typescript
-import { Branchwright, BranchwrightOptions } from 'branchwright';
+import { Branchwright } from '@branchwright/cli';
 
-const options: BranchwrightOptions = {
-  config: { /* BranchConfig */ },
-  types: [ /* BranchType[] */ ],
-  cwd: '/path/to/repo' // Optional: specify git repository path
-};
+const branchwright = new Branchwright();
 
-const branchwright = new Branchwright(options);
+// Validate a branch name
+const result = await branchwright.validate('feat/user-auth');
+console.log(result.valid ? '✓ Valid' : `✗ ${result.message}`);
+
+// Create a branch interactively
+const branchName = await branchwright.create();
+
+// Access underlying components
+const validator = branchwright.getValidator();
+const creator = branchwright.getCreator();
 ```
 
-#### Methods
-
-##### `validate(branchName: string): ValidationResult`
-
-Validate a branch name against the configured rules.
+### Advanced: Rule Evaluation
 
 ```typescript
-const result = branchwright.validate('feature/user-auth');
-// Returns: { valid: boolean, message?: string, suggestions?: string[] }
+import { evaluateRules, coreRuleRegistry } from '@branchwright/cli';
+
+const config = { /* your config */ };
+const violations = await evaluateRules('feat/my-branch', config, coreRuleRegistry);
+
+violations.forEach(v => console.error(v.message));
 ```
 
-##### `create(options?: CreateBranchOptions): Promise<string | null>`
+## Integration
 
-Start interactive branch creation workflow.
+### Git Hooks (Husky)
 
-```typescript
-const branchName = await branchwright.create({
-  baseBranch: 'main',
-  checkout: true,
-  dryRun: false
-});
-```
-
-##### `getValidator(): BranchValidator`
-
-Get the underlying validator instance for advanced usage.
-
-##### `getCreator(): BranchCreator`
-
-Get the underlying creator instance for advanced usage.
-
-### Class: `BranchValidator`
-
-```typescript
-import { BranchValidator, BranchConfig } from 'branchwright';
-
-const validator = new BranchValidator(config);
-```
-
-#### Methods
-
-##### `validate(branchName: string): ValidationResult`
-
-Validate a single branch name.
-
-##### `getConfig(): Required<BranchConfig>`
-
-Get the current validator configuration.
-
-##### `updateConfig(newConfig: Partial<BranchConfig>): void`
-
-Update the validator configuration.
-
-### Class: `BranchCreator`
-
-```typescript
-import { BranchCreator, BranchwrightOptions } from 'branchwright';
-
-const creator = new BranchCreator(options);
-```
-
-#### Methods
-
-##### `createInteractive(options?: CreateBranchOptions): Promise<string | null>`
-
-Start the interactive branch creation workflow.
-
-##### `validateBranch(branchName: string): void`
-
-Validate and display the result of a branch name.
-
-##### `getTypes(): BranchType[]`
-
-Get available branch types.
-
-##### `addType(type: BranchType): void`
-
-Add a custom branch type.
-
-## Integration Examples
-
-### Pre-commit Hook
-
-Add branch name validation to your git hooks:
+Validate branch names before pushing:
 
 ```bash
-#!/bin/sh
-# .git/hooks/pre-push
-branchwright lint
-if [ $? -ne 0 ]; then
-  echo "Branch name validation failed. Aborting push."
-  exit 1
-fi
+npm install --save-dev husky
+npx husky init
 ```
 
-### GitHub Actions
+**.husky/pre-push:**
+```bash
+#!/bin/sh
+npx brw lint || exit 1
+```
+
+### CI/CD (GitHub Actions)
 
 ```yaml
-name: Branch Name Lint
+name: Branch Lint
 on: [pull_request]
+
 jobs:
-  lint-branch:
+  lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '16'
-      - run: npm install -g branchwright
-      - run: branchwright lint ${{ github.head_ref }}
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: npm install -g @branchwright/cli
+      - run: brw lint ${{ github.head_ref }}
 ```
 
 ### NPM Scripts
 
-Add to your `package.json`:
-
 ```json
 {
   "scripts": {
-    "branch:create": "branchwright create",
-    "branch:lint": "branchwright lint",
-    "branch:lint-all": "branchwright lint --all"
+    "branch": "brw create",
+    "branch:lint": "brw lint"
   }
 }
 ```
 
-## Migration from Other Tools
+## Common Patterns
 
-### From Git Flow
+### Conventional Commits Style
 
-If you're using git-flow, you can configure similar branch types:
-
-```json
-{
-  "types": [
-    {
-      "type": "feature",
-      "name": "Feature",
-      "description": "New feature development",
-      "pattern": "feature/{description}"
-    },
-    {
-      "type": "release",
-      "name": "Release",
-      "description": "Release preparation",
-      "pattern": "release/{description}"
-    },
-    {
-      "type": "hotfix",
-      "name": "Hotfix", 
-      "description": "Production hotfix",
-      "pattern": "hotfix/{description}"
-    }
-  ]
-}
+```typescript
+export default defineConfig({
+  branchTypes: [
+    { name: 'feat', label: 'feat: New feature' },
+    { name: 'fix', label: 'fix: Bug fix' },
+    { name: 'docs', label: 'docs: Documentation' },
+    { name: 'refactor', label: 'refactor: Code refactoring' },
+    { name: 'test', label: 'test: Testing' },
+    { name: 'chore', label: 'chore: Maintenance' },
+  ],
+  template: '{{type}}/{{desc}}',
+});
 ```
 
-### From Conventional Commits
+### Ticket-Required Workflow
 
-Map conventional commit types to branch types:
-
-```json
-{
-  "types": [
-    {"type": "feat", "name": "Feature", "description": "New feature", "pattern": "feat/{description}"},
-    {"type": "fix", "name": "Fix", "description": "Bug fix", "pattern": "fix/{description}"},
-    {"type": "docs", "name": "Documentation", "description": "Documentation changes", "pattern": "docs/{description}"},
-    {"type": "style", "name": "Style", "description": "Code style changes", "pattern": "style/{description}"},
-    {"type": "refactor", "name": "Refactor", "description": "Code refactoring", "pattern": "refactor/{description}"},
-    {"type": "test", "name": "Test", "description": "Test changes", "pattern": "test/{description}"},
-    {"type": "chore", "name": "Chore", "description": "Maintenance", "pattern": "chore/{description}"}
-  ]
-}
+```typescript
+export default defineConfig({
+  template: '{{type}}/{{ticket}}-{{desc}}',
+  rules: {
+    ticketId: ['required', { prefix: 'PROJ-' }],
+  },
+});
 ```
 
-## Contributing
+### Team with Optional Extras
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+```typescript
+export default defineConfig({
+  template: '{{type}}/{{ticket}}-{{desc}}',
+  rules: {
+    ticketId: ['optional', { prefix: 'TEAM-' }],
+  },
+  extraQuestions: {
+    pushToRemote: true,  // Ask about pushing
+  },
+});
+```
 
-### Development Setup
+## Troubleshooting
 
+### "Not in a git repository"
+
+Ensure you're running commands inside a Git repository:
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/branchwright.git
-cd branchwright
-
-# Install dependencies  
-npm install
-
-# Build the project
-npm run build
-
-# Run tests
-npm test
-
-# Run linting
-npm run lint
-
-# Test CLI locally
-npm run dev create
+git init  # If needed
 ```
 
-## Changelog
+### Branch name validation fails
 
-See [CHANGELOG.md](CHANGELOG.md) for release history.
+Check your configuration:
+```bash
+brw config
+```
+
+Verify your branch name matches the template and rules.
+
+### Custom rules not loading
+
+Ensure plugin paths are correct and exports match the expected format:
+```typescript
+// my-rules.ts
+export default [defineRule(/* ... */)];
+```
 
 ## License
 
 MIT © [Branchwright Contributors](LICENSE)
 
-## Credits
-
-Inspired by:
-- [commitizen](https://github.com/commitizen/cz-cli) - Interactive commit message generation
-- [commitlint](https://github.com/conventional-changelog/commitlint) - Commit message linting
-- [husky](https://github.com/typicode/husky) - Git hooks management
-
 ---
 
-**Developed and Maintained by Noldaru**
+**Developed and maintained by Noldaru.**
