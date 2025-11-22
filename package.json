@@ -8,12 +8,13 @@
   "types": "./dist/types/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js",
-      "types": "./dist/types/index.d.ts"
+      "require": "./dist/cjs/index.js"
     }
   },
   "bin": {
+    "brw": "dist/cjs/cli.js",
     "branchwright": "dist/cjs/cli.js"
   },
   "files": [
@@ -22,10 +23,9 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "npm run clean && npm run build:types && npm run build:esm && npm run build:cjs",
+    "build": "npm run clean && npm run build:types && tsup --config tsup.config.ts && npm run build:cjs:package",
     "build:types": "tsc -p tsconfig.src.json --emitDeclarationOnly --outDir dist/types",
-    "build:esm": "tsc -p tsconfig.src.json --module esnext --moduleResolution bundler --outDir dist/esm",
-    "build:cjs": "tsc -p tsconfig.src.json --module commonjs --moduleResolution node --outDir dist/cjs && npm run build:cjs:package",
+    "build:watch": "tsup --config tsup.config.ts --watch",
     "build:cjs:package": "echo '{\"type\":\"commonjs\"}' > dist/cjs/package.json",
     "clean": "rimraf dist/",
     "dev": "npm run build && node dist/cjs/cli.js",
@@ -62,14 +62,16 @@
   },
   "homepage": "https://github.com/branchwright/branchwright#readme",
   "engines": {
-    "node": ">=20.0.0",
+    "node": ">=20.12.0",
     "npm": ">=9.0.0"
   },
   "dependencies": {
-    "@inquirer/prompts": "^7.9.0",
+    "@inquirer/prompts": "^8.0.1",
+    "bundle-require": "^5.1.0",
     "chalk": "^5.6.2",
     "commander": "^14.0.2",
-    "inquirer": "^12.10.0",
+    "cosmiconfig": "^9.0.0",
+    "inquirer": "^13.0.1",
     "simple-git": "^3.30.0"
   },
   "devDependencies": {
@@ -94,6 +96,7 @@
     "prettier": "^3.6.2",
     "rimraf": "^6.1.0",
     "semantic-release": "^25.0.2",
+    "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.3",
     "vitest": "^4.0.8"

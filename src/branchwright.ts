@@ -1,11 +1,12 @@
 import { BranchCreator } from './creator.js';
 import { type BranchConfig } from './types.js';
-import { loadConfig } from './utils.js';
-import { BranchValidator } from './validator.js';
+import { loadConfigWithMeta } from './utils.js';
+import { BranchValidator, type BranchValidatorOptions } from './validator.js';
 
 export interface BranchwrightOptions {
   config?: BranchConfig;
   cwd?: string;
+  configPath?: string;
 }
 
 /**
@@ -16,7 +17,15 @@ export class Branchwright {
   private creator: BranchCreator;
 
   constructor(options: BranchwrightOptions = {}) {
-    this.validator = new BranchValidator(options.config);
+    const validatorOptions: BranchValidatorOptions = {};
+    if (options.cwd) {
+      validatorOptions.cwd = options.cwd;
+    }
+    if (options.configPath) {
+      validatorOptions.configPath = options.configPath;
+    }
+
+    this.validator = new BranchValidator(options.config, validatorOptions);
     this.creator = new BranchCreator(options.config, options.cwd);
   }
 
@@ -24,14 +33,23 @@ export class Branchwright {
    * Initialize with config from file
    */
   static async create(options: BranchwrightOptions = {}): Promise<Branchwright> {
-    const config = options.config || (await loadConfig());
-    return new Branchwright({ ...options, config });
+    if (options.config) {
+      return new Branchwright(options);
+    }
+
+    const { config, filepath } = await loadConfigWithMeta(options.cwd ? { cwd: options.cwd } : {});
+    const branchwrightOptions: BranchwrightOptions = { ...options, config };
+    if (filepath) {
+      branchwrightOptions.configPath = filepath;
+    }
+
+    return new Branchwright(branchwrightOptions);
   }
 
   /**
    * Validate a branch name
    */
-  validate(branchName: string) {
+  async validate(branchName: string) {
     return this.validator.validate(branchName);
   }
 

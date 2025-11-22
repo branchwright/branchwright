@@ -1,8 +1,12 @@
-import { existsSync } from 'fs';
-import path from 'path';
-import { pathToFileURL } from 'url';
+import { bundleRequire } from 'bundle-require';
+import { cosmiconfig, defaultLoaders } from 'cosmiconfig';
+import type { Loaders } from 'cosmiconfig';
+import path from 'node:path';
 
 import { DEFAULT_CONFIG } from './config.js';
+import { coreRuleRegistry, coreRules } from './rules/core.js';
+import { loadRulePresetConfigs } from './rules/extensions.js';
+import { type RuleExecution, type RuleRegistry, evaluateRules, resolveRuleConfig } from './rules/index.js';
 import type { BranchConfig, BranchIgnorePattern, DescriptionStyle } from './types.js';
 
 const GLOB_ESCAPE_REGEX = /[.*+?^${}()|[\]\\]/g;
@@ -148,6 +152,53 @@ export function buildBranchNameFromTemplate(template: string, placeholders: Temp
   return result;
 }
 
+const MODULE_NAME = 'branchwright';
+
+const SEARCH_PLACES = [
+  'package.json',
+  '.branchwrightrc',
+  '.branchwrightrc.json',
+  '.branchwrightrc.yaml',
+  '.branchwrightrc.yml',
+  '.branchwrightrc.js',
+  '.branchwrightrc.cjs',
+  '.branchwrightrc.mjs',
+  '.branchwrightrc.ts',
+  'branchwright.config.js',
+  'branchwright.config.cjs',
+  'branchwright.config.mjs',
+  'branchwright.config.ts',
+  'branchwright.config.json',
+  'branchwright.config.yaml',
+  'branchwright.config.yml',
+] as const;
+
+const loadTypeScriptConfig = async (filePath: string) => {
+  const { mod } = await bundleRequire({
+    filepath: filePath,
+    format: 'cjs',
+    external: ['@branchwright/cli'],
+    esbuildOptions: {
+      platform: 'node',
+      target: ['node18'],
+    },
+  });
+
+  return mod.default ?? mod;
+};
+
+const CONFIG_LOADERS = {
+  ...defaultLoaders,
+  '.ts': loadTypeScriptConfig,
+  '.cts': loadTypeScriptConfig,
+  '.mts': loadTypeScriptConfig,
+} satisfies Loaders;
+
+const explorer = cosmiconfig(MODULE_NAME, {
+  searchPlaces: [...SEARCH_PLACES],
+  loaders: CONFIG_LOADERS,
+});
+
 type IgnoredBranchesInput = BranchConfig['ignoredBranches'] | undefined;
 
 function normalizeIgnoredBranches(input: IgnoredBranchesInput): BranchConfig['ignoredBranches'] {
@@ -158,87 +209,119 @@ function normalizeIgnoredBranches(input: IgnoredBranchesInput): BranchConfig['ig
   return input.filter((entry): entry is string | RegExp => typeof entry === 'string' || entry instanceof RegExp);
 }
 
-export async function loadConfig(): Promise<BranchConfig> {
-  const configPath = path.resolve(process.cwd(), 'branchwright.config.ts');
+export interface LoadConfigOptions {
+  cwd?: string;
+}
 
-  if (!existsSync(configPath)) {
-    return DEFAULT_CONFIG;
-  }
+export interface LoadConfigResult {
+  config: BranchConfig;
+  filepath?: string;
+}
+
+export async function loadConfigWithMeta(options: LoadConfigOptions = {}): Promise<LoadConfigResult> {
+  const searchFrom = options.cwd ?? process.cwd();
 
   try {
-    const module = await import(pathToFileURL(configPath).href);
-    const userConfig = (module.default ?? module) as Partial<BranchConfig> | BranchConfig;
-    const partial = userConfig as Partial<BranchConfig>;
+    const result = await explorer.search(searchFrom);
+    const filepath = result?.filepath;
 
-    return {
+    if (!result || result.isEmpty || typeof result.config !== 'object' || result.config === null) {
+      const config = {
+        ...DEFAULT_CONFIG,
+        branchTypes: [...DEFAULT_CONFIG.branchTypes],
+        ignoredBranches: [...DEFAULT_CONFIG.ignoredBranches],
+        plugins: [...(DEFAULT_CONFIG.plugins ?? [])],
+        presets: [...(DEFAULT_CONFIG.presets ?? [])],
+        rules: { ...DEFAULT_CONFIG.rules },
+      } satisfies BranchConfig;
+
+      const resultPayload: LoadConfigResult = { config };
+      if (filepath) {
+        resultPayload.filepath = filepath;
+      }
+
+      return resultPayload;
+    }
+
+    const userConfig = result.config as Partial<BranchConfig>;
+    const baseDir = filepath ? path.dirname(filepath) : searchFrom;
+    const plugins = Array.isArray(userConfig.plugins) ? [...userConfig.plugins] : [...(DEFAULT_CONFIG.plugins ?? [])];
+    const presets = Array.isArray(userConfig.presets) ? [...userConfig.presets] : [...(DEFAULT_CONFIG.presets ?? [])];
+
+    const presetRules = await loadRulePresetConfigs(presets, { baseDir });
+    const mergedRules = {
+      ...presetRules,
+      ...(userConfig.rules ?? {}),
+    };
+
+    const config: BranchConfig = {
       ...DEFAULT_CONFIG,
       ...userConfig,
-      branchTypes: partial.branchTypes?.length ? partial.branchTypes : DEFAULT_CONFIG.branchTypes,
-      ignoredBranches: normalizeIgnoredBranches(partial.ignoredBranches),
+      branchTypes: userConfig.branchTypes?.length ? [...userConfig.branchTypes] : [...DEFAULT_CONFIG.branchTypes],
+      ignoredBranches: normalizeIgnoredBranches(userConfig.ignoredBranches),
+      plugins,
+      presets,
+      rules: mergedRules,
     };
+
+    const resultPayload: LoadConfigResult = { config };
+    if (filepath) {
+      resultPayload.filepath = filepath;
+    }
+
+    return resultPayload;
   } catch (error) {
-    console.error('Failed to load branchwright.config.ts. Falling back to defaults.');
-    console.error(error);
-    return DEFAULT_CONFIG;
+    console.error('Failed to load Branchwright configuration. Falling back to defaults.');
+    if (process.env.BRANCHWRIGHT_DEBUG === 'true') {
+      console.error(error);
+    } else if (error instanceof Error) {
+      console.error(error.message);
+    } else {
+      console.error(String(error));
+    }
+    const fallbackConfig: BranchConfig = {
+      ...DEFAULT_CONFIG,
+      branchTypes: [...DEFAULT_CONFIG.branchTypes],
+      ignoredBranches: [...DEFAULT_CONFIG.ignoredBranches],
+      plugins: [...(DEFAULT_CONFIG.plugins ?? [])],
+      presets: [...(DEFAULT_CONFIG.presets ?? [])],
+      rules: { ...DEFAULT_CONFIG.rules },
+    };
+    return {
+      config: fallbackConfig,
+    };
   }
+}
+
+export async function loadConfig(options: LoadConfigOptions = {}): Promise<BranchConfig> {
+  const { config } = await loadConfigWithMeta(options);
+  return config;
 }
 
 export interface LintResult {
   isValid: boolean;
   errors: string[];
+  violations?: RuleExecution[] | undefined;
 }
 
-export function lintBranchName(branchName: string, config: BranchConfig): LintResult {
-  const errors: string[] = [];
-
-  // Check if branch should be ignored
+export async function lintBranchName(
+  branchName: string,
+  config: BranchConfig,
+  registry: RuleRegistry = coreRuleRegistry,
+): Promise<LintResult> {
   const isIgnored = config.ignoredBranches.some((pattern) => matchesPattern(branchName, pattern));
   if (isIgnored) {
     return { isValid: true, errors: [] };
   }
 
-  // Parse branch name format: type/[ticket-id/]description
-  const parts = branchName.split('/');
+  const violations = await evaluateRules(branchName, config, registry);
+  const errors = violations.map((violation) => violation.message);
 
-  if (parts.length < 2) {
-    errors.push('Branch name must follow the format: type/description or type/ticket-id/description');
-    return { isValid: false, errors };
-  }
-
-  const [branchType, ...rest] = parts;
-
-  // Validate branch type
-  const validTypes = config.branchTypes.map((type) => type.name);
-  if (!validTypes.includes(branchType)) {
-    errors.push(`Invalid branch type "${branchType}". Valid types: ${validTypes.join(', ')}`);
-  }
-
-  // Get description (last part)
-  const description = rest[rest.length - 1];
-
-  // Validate description length
-  if (description.length > config.maxDescriptionLength) {
-    errors.push(`Description "${description}" exceeds maximum length of ${config.maxDescriptionLength} characters`);
-  }
-
-  // Validate description style
-  if (!isDescriptionStyleValid(description, config.descriptionStyle)) {
-    const corrected = applyDescriptionStyle(description, config.descriptionStyle);
-    errors.push(
-      `Description "${description}" does not match required style "${config.descriptionStyle}". ` +
-        `Suggested: "${corrected}"`,
-    );
-  }
-
-  // Validate ticket ID if present
-  if (rest.length === 2) {
-    const ticketId = rest[0];
-    if (config.ticketIdPrefix && !ticketId.startsWith(config.ticketIdPrefix)) {
-      errors.push(`Ticket ID "${ticketId}" must start with "${config.ticketIdPrefix}"`);
-    }
-  }
-
-  return { isValid: errors.length === 0, errors };
+  return {
+    isValid: violations.length === 0,
+    errors,
+    violations,
+  };
 }
 
 export interface ParsedDescription {
@@ -259,8 +342,9 @@ export function parseUserDescription(input: string, config: BranchConfig): Parse
   }
 
   // Check if input contains ticket ID pattern
-  const ticketPattern = config.ticketIdPrefix
-    ? new RegExp(`^${escapeRegex(config.ticketIdPrefix)}\\d+\\s+(.+)$`)
+  const ticketIdRule = resolveRuleConfig(config, coreRules.ticketId);
+  const ticketPattern = ticketIdRule.options?.prefix
+    ? new RegExp(`^${escapeRegex(ticketIdRule.options.prefix)}\\d+\\s+(.+)$`)
     : /^[A-Z]+-\d+\s+(.+)$/;
 
   const ticketMatch = ticketPattern.exec(trimmed);
@@ -299,3 +383,5 @@ export function parseUserDescription(input: string, config: BranchConfig): Parse
     hasTicket: false,
   };
 }
+
+export { getTicketIdRule, normalizeRuleConfig } from './rules/helpers.js';

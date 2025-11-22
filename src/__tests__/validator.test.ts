@@ -11,17 +11,17 @@ describe('BranchValidator', () => {
   });
 
   describe('validate', () => {
-    it('should validate correct branch names', () => {
+    it('should validate correct branch names', async () => {
       const validNames = ['feat/user-authentication', 'fix/login-error', 'chore/update-dependencies'];
 
-      validNames.forEach((name) => {
-        const result = validator.validate(name);
+      for (const name of validNames) {
+        const result = await validator.validate(name);
         expect(result.valid).toBe(true);
         expect(result.message).toBeUndefined();
-      });
+      }
     });
 
-    it('should reject invalid branch names', () => {
+    it('should reject invalid branch names', async () => {
       const invalidNames = [
         'invalid-branch', // doesn't match pattern
         'feature/', // no description
@@ -29,14 +29,14 @@ describe('BranchValidator', () => {
         'feat/this-description-is-way-too-long-for-the-default-limit', // too long
       ];
 
-      invalidNames.forEach((name) => {
-        const result = validator.validate(name);
+      for (const name of invalidNames) {
+        const result = await validator.validate(name);
         expect(result.valid).toBe(false);
         expect(result.message).toBeDefined();
-      });
+      }
     });
 
-    it('should enforce description length', () => {
+    it('should enforce description length', async () => {
       const config: BranchConfig = {
         branchTypes: [{ name: 'feat', label: 'Feature' }],
         maxDescriptionLength: 5,
@@ -46,12 +46,12 @@ describe('BranchValidator', () => {
       };
       validator = new BranchValidator(config);
 
-      const result = validator.validate('feat/very-long-description');
+      const result = await validator.validate('feat/very-long-description');
       expect(result.valid).toBe(false);
       expect(result.message).toContain('exceeds maximum length');
     });
 
-    it('should validate description style', () => {
+    it('should validate description style', async () => {
       const config: BranchConfig = {
         branchTypes: [{ name: 'feat', label: 'Feature' }],
         maxDescriptionLength: 30,
@@ -61,12 +61,12 @@ describe('BranchValidator', () => {
       };
       validator = new BranchValidator(config);
 
-      const result = validator.validate('feat/test-with-hyphens');
+      const result = await validator.validate('feat/test-with-hyphens');
       expect(result.valid).toBe(false);
-      expect(result.message).toContain('does not match required style');
+      expect(result.message).toContain('must use "snake_case" style');
     });
 
-    it('should validate branch types', () => {
+    it('should validate branch types', async () => {
       const config: BranchConfig = {
         branchTypes: [{ name: 'custom', label: 'Custom' }],
         maxDescriptionLength: 30,
@@ -76,12 +76,12 @@ describe('BranchValidator', () => {
       };
       validator = new BranchValidator(config);
 
-      const result = validator.validate('feat/test-feature');
+      const result = await validator.validate('feat/test-feature');
       expect(result.valid).toBe(false);
       expect(result.message).toContain('Invalid branch type');
     });
 
-    it('should ignore branches in ignore list', () => {
+    it('should ignore branches in ignore list', async () => {
       const config: BranchConfig = {
         branchTypes: [{ name: 'feat', label: 'Feature' }],
         maxDescriptionLength: 30,
@@ -91,11 +91,11 @@ describe('BranchValidator', () => {
       };
       validator = new BranchValidator(config);
 
-      const result = validator.validate('main');
+      const result = await validator.validate('main');
       expect(result.valid).toBe(true);
     });
 
-    it('should validate ticket ID when present', () => {
+    it('should validate ticket ID when present', async () => {
       const config: BranchConfig = {
         branchTypes: [{ name: 'feat', label: 'Feature' }],
         maxDescriptionLength: 30,
@@ -106,10 +106,10 @@ describe('BranchValidator', () => {
       };
       validator = new BranchValidator(config);
 
-      const validResult = validator.validate('feat/PROJ-123/test-feature');
+      const validResult = await validator.validate('feat/PROJ-123/test-feature');
       expect(validResult.valid).toBe(true);
 
-      const invalidResult = validator.validate('feat/WRONG-123/test-feature');
+      const invalidResult = await validator.validate('feat/WRONG-123/test-feature');
       expect(invalidResult.valid).toBe(false);
       expect(invalidResult.message).toContain('must start with "PROJ-"');
     });

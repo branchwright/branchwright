@@ -1,4 +1,3 @@
-
 import type { PrettierConfig } from '@trivago/prettier-plugin-sort-imports';
 
 export default {

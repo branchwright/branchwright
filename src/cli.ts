@@ -3,66 +3,65 @@
 import chalk from 'chalk';
 import { Command } from 'commander';
 import fs from 'fs';
-import path from 'path';
 
 import { Branchwright } from './branchwright.js';
-import { type BranchConfig, type BranchType } from './types.js';
+import { loadConfigWithMeta } from './utils.js';
 
 const program = new Command();
 
-// Load configuration from package.json or .branchwright config file
-function loadConfig(): { config?: BranchConfig; types?: BranchType[] } {
-  const configPaths = ['.branchwright.json', '.branchwright.js', 'branchwright.config.json', 'branchwright.config.js'];
+program
+  .name('brw')
+  .description('Git branch name linting and interactive branch creation (alias: branchwright)')
+  .version('1.0.0');
 
-  // Check for config in package.json
-  try {
-    const packagePath = path.join(process.cwd(), 'package.json');
-    if (fs.existsSync(packagePath)) {
-      const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
-      if (packageJson.branchwright) {
-        return packageJson.branchwright;
-      }
-    }
-  } catch {
-    // Ignore package.json parsing errors
-  }
-
-  // Check for standalone config files
-  for (const configPath of configPaths) {
-    const fullPath = path.join(process.cwd(), configPath);
-    if (fs.existsSync(fullPath)) {
-      try {
-        if (configPath.endsWith('.json')) {
-          const config = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
-          return config;
-        } else {
-          // For .js files, we'd need dynamic import, for now just support JSON
-          console.warn(chalk.yellow(`JavaScript config files not yet supported: ${configPath}`));
-        }
-      } catch (error) {
-        console.error(chalk.red(`Error loading config from ${configPath}: ${error}`));
-      }
-    }
-  }
-
-  return {};
-}
-
-program.name('branchwright').description('Git branch name linting and interactive branch creation').version('1.0.0');
+program.addHelpText('after', '\nAlias: branchwright');
 
 program
   .command('create')
   .alias('c')
   .description('Create a new branch interactively')
+  .option('-t, --type <type>', 'Branch type (feat, fix, chore, etc.)')
+  .option('--ticket <id>', 'Ticket/issue ID')
+  .option('-d, --desc <description>', 'Branch description')
+  .option('-y, --yes', 'Skip proceed confirmation')
+  .option('--push', 'Push branch to remote after creation')
   .option('-b, --base <branch>', 'Base branch to create from')
   .option('-n, --no-checkout', "Don't checkout to the new branch after creation")
   .option('--dry-run', 'Show what would be done without actually creating the branch')
+  .addHelpText(
+    'after',
+    `
+
+Examples:
+  # Interactive mode (default)
+  $ brw create
+
+  # Fully non-interactive
+  $ brw create -t feat -d user-authentication
+
+  # With ticket ID
+  $ brw create -t fix -d login-bug --ticket PROJ-123
+
+  # Create and push to remote
+  $ brw create -t feat -d api-endpoint --push
+
+  # From specific base branch
+  $ brw create -t feat -d new-feature -b main
+
+  # Preview without creating
+  $ brw create -t chore -d cleanup --dry-run
+`,
+  )
   .action(async (options) => {
     try {
-      const config = loadConfig();
-      const branchwright = new Branchwright(config);
+      const branchwright = await Branchwright.create({ cwd: process.cwd() });
 
       const branchName = await branchwright.create({
+        type: options.type,
+        ticketId: options.ticket,
+        description: options.desc,
+        skipProceed: !options.proceed,
+        pushToRemote: options.push,
         baseBranch: options.base,
         checkout: options.checkout,
         dryRun: options.dryRun,
@@ -85,8 +84,7 @@ program
   .option('--all', 'Validate all local branches')
   .action(async (branchNames: string[], options) => {
     try {
-      const config = loadConfig();
-      const branchwright = new Branchwright(config);
+      const branchwright = await Branchwright.create({ cwd: process.cwd() });
 
       if (options.all) {
         const { simpleGit } = await import('simple-git');
@@ -103,7 +101,7 @@ program
       let hasErrors = false;
 
       for (const branchName of branchNames) {
-        const validation = branchwright.validate(branchName);
+        const validation = await branchwright.validate(branchName);
 
         if (validation.valid) {
           console.log(chalk.green(`✓ ${branchName}`));
@@ -200,10 +198,14 @@ program
 program
   .command('config')
   .description('Show current configuration')
-  .action(() => {
+  .action(async () => {
     try {
-      const config = loadConfig();
-      console.log(chalk.blue('Current configuration:'));
+      const { config, filepath } = await loadConfigWithMeta({ cwd: process.cwd() });
+      if (filepath) {
+        console.log(chalk.blue(`Loaded configuration (${filepath}):`));
+      } else {
+        console.log(chalk.blue('Using default configuration:'));
+      }
       console.log(JSON.stringify(config, null, 2));
     } catch (error) {
       console.error(chalk.red(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
