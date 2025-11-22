@@ -46,7 +46,7 @@ jobs:
                 owner,
                 repo,
                 issue_number: number,
-                body: `Base branch automatically updated from \\`${base}\\` to \\`${newBase}\\` to satisfy the branch merge policy.`,
+                body: `Base branch automatically updated from \`${base}\` to \`${newBase}\` to satisfy the branch merge policy.`,
               });
 
               core.notice(`Retargeted PR #${number} from '${base}' to '${newBase}' for head '${head}'.`);
