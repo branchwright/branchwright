@@ -86,6 +86,8 @@ export interface BranchConfig {
   extraQuestions?: InteractiveQuestions;
   /** Customize the text of prompts shown during interactive branch creation */
   questions?: QuestionConfig;
+  /** Show CLI tips about using flags (default: true) */
+  showCliTips?: boolean;
   /** @deprecated Use rules.ticketId instead. Ticket ID prompt mode. */
   ticketIdPrompt?: TicketIdPromptMode;
   /** @deprecated Use rules.ticketId[1].prefix instead. Ticket ID prefix */
@@ -124,6 +126,16 @@ export interface CreateBranchOptions {
   baseBranch?: string;
   /** Dry run - don't actually create the branch */
   dryRun?: boolean;
+  /** Pre-specified branch type */
+  type?: string;
+  /** Pre-specified ticket ID */
+  ticketId?: string;
+  /** Pre-specified description */
+  description?: string;
+  /** Skip proceed confirmation */
+  skipProceed?: boolean;
+  /** Push to remote after creation */
+  pushToRemote?: boolean;
 }
 
 export interface BranchwrightOptions {
