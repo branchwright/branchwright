@@ -20,14 +20,48 @@ program
   .command('create')
   .alias('c')
   .description('Create a new branch interactively')
+  .option('-t, --type <type>', 'Branch type (feat, fix, chore, etc.)')
+  .option('--ticket <id>', 'Ticket/issue ID')
+  .option('-d, --desc <description>', 'Branch description')
+  .option('-y, --yes', 'Skip proceed confirmation')
+  .option('--push', 'Push branch to remote after creation')
   .option('-b, --base <branch>', 'Base branch to create from')
   .option('-n, --no-checkout', "Don't checkout to the new branch after creation")
   .option('--dry-run', 'Show what would be done without actually creating the branch')
+  .addHelpText(
+    'after',
+    `
+
+Examples:
+  # Interactive mode (default)
+  $ brw create
+
+  # Fully non-interactive
+  $ brw create -t feat -d user-authentication
+
+  # With ticket ID
+  $ brw create -t fix -d login-bug --ticket PROJ-123
+
+  # Create and push to remote
+  $ brw create -t feat -d api-endpoint --push
+
+  # From specific base branch
+  $ brw create -t feat -d new-feature -b main
+
+  # Preview without creating
+  $ brw create -t chore -d cleanup --dry-run
+`,
+  )
   .action(async (options) => {
     try {
       const branchwright = await Branchwright.create({ cwd: process.cwd() });
 
       const branchName = await branchwright.create({
+        type: options.type,
+        ticketId: options.ticket,
+        description: options.desc,
+        skipProceed: !options.proceed,
+        pushToRemote: options.push,
         baseBranch: options.base,
         checkout: options.checkout,
         dryRun: options.dryRun,

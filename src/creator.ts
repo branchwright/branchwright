@@ -4,17 +4,8 @@ import { type SimpleGit, simpleGit } from 'simple-git';
 
 import { coreRules } from './rules/core.js';
 import { resolveRuleConfig } from './rules/index.js';
-import type { BranchConfig, BranchTypeOption, TicketIdPromptMode } from './types.js';
+import type { BranchConfig, BranchTypeOption, CreateBranchOptions, TicketIdPromptMode } from './types.js';
 import { type ParsedDescription, buildBranchName, loadConfig, parseUserDescription } from './utils.js';
-
-export interface CreateBranchOptions {
-  /** Whether to create and switch to the branch */
-  checkout?: boolean;
-  /** Base branch to create from */
-  baseBranch?: string;
-  /** Dry run - don't actually create the branch */
-  dryRun?: boolean;
-}
 
 export class BranchCreator {
   private git: SimpleGit;
@@ -171,25 +162,62 @@ export class BranchCreator {
       const currentBranch = await this.git.revparse(['--abbrev-ref', 'HEAD']);
       const defaultBaseBranch = options.baseBranch || currentBranch;
 
-      // Step 1: Select branch type
-      const branchType = await this.promptForBranchType(config.branchTypes, config.questions?.branchType);
+      // Step 1: Select branch type (use flag if provided)
+      let branchType: { name: string; description?: string };
+      if (options.type) {
+        // Validate provided type exists in config
+        const matchedType = config.branchTypes.find((bt) => bt.name === options.type);
+        if (!matchedType) {
+          console.error(
+            chalk.red(
+              `Error: Invalid branch type "${options.type}". Available types: ${config.branchTypes.map((bt) => bt.name).join(', ')}`,
+            ),
+          );
+          return null;
+        }
+        branchType = matchedType;
+      } else {
+        branchType = await this.promptForBranchType(config.branchTypes, config.questions?.branchType);
+      }
 
-      // Step 2: Get ticket ID if configured
+      // Step 2: Get ticket ID if configured (use flag if provided)
       const ticketIdRule = resolveRuleConfig(config, coreRules.ticketId);
-      const ticketId = await this.promptForTicketId(
-        ticketIdRule.severity === 'off' ? 'skip' : ticketIdRule.severity,
-        ticketIdRule.options?.prefix || '',
-        config.questions?.ticketId,
-        config.questions?.ticketIdRequired,
-      );
+      let ticketId: string;
+      if (options.ticketId) {
+        // Validate prefix if configured
+        const prefix = ticketIdRule.options?.prefix || '';
+        if (prefix && !options.ticketId.startsWith(prefix)) {
+          console.error(chalk.red(`Error: Ticket ID must start with "${prefix}"`));
+          return null;
+        }
+        ticketId = options.ticketId;
+      } else {
+        ticketId = await this.promptForTicketId(
+          ticketIdRule.severity === 'off' ? 'skip' : ticketIdRule.severity,
+          ticketIdRule.options?.prefix || '',
+          config.questions?.ticketId,
+          config.questions?.ticketIdRequired,
+        );
+      }
 
-      // Step 3: Get description
-      const descriptionResult = await this.promptForDescription(
-        config,
-        ticketId,
-        config.questions?.description,
-        config.questions?.descriptionWithTicket,
-      );
+      // Step 3: Get description (use flag if provided)
+      let descriptionResult: { description: string; hasTicket: boolean };
+      if (options.description) {
+        // Validate and parse description
+        const parsed = parseUserDescription(options.description, config);
+        if (parsed.ticketError) {
+          console.error(chalk.red(`Error: ${parsed.ticketError}`));
+          return null;
+        }
+        descriptionResult = parsed;
+      } else {
+        descriptionResult = await this.promptForDescription(
+          config,
+          ticketId,
+          config.questions?.description,
+          config.questions?.descriptionWithTicket,
+        );
+      }
 
       // Build final branch name
       let finalTicketId = ticketId;
@@ -211,25 +239,36 @@ export class BranchCreator {
 
       console.log(chalk.green(`Generated branch name: ${branchName}`));
 
-      // Ask for confirmation and additional options
-      const proceedAnswers = await inquirer.prompt([
-        {
-          type: 'confirm',
-          name: 'proceed',
-          message: config.questions?.proceed || 'Create this branch?',
-          default: true,
-        },
-      ]);
-
-      if (!proceedAnswers.proceed) {
-        console.log(chalk.yellow('Branch creation cancelled'));
-        return null;
+      // Show CLI tips if enabled and no flags were used
+      const showTips = (config.showCliTips ?? true) && !options.type && !options.ticketId && !options.description;
+      if (showTips) {
+        console.log(
+          chalk.gray('\n💡 Tip: You can skip these questions using flags: brw create -t feature -d "my-description"'),
+        );
+        console.log(chalk.gray('   Run "brw create --help" to see all available options.\n'));
       }
 
-      // Build optional questions based on extraQuestions config
+      // Ask for confirmation unless skipped via flag
+      if (!options.skipProceed) {
+        const proceedAnswers = await inquirer.prompt([
+          {
+            type: 'confirm',
+            name: 'proceed',
+            message: config.questions?.proceed || 'Create this branch?',
+            default: true,
+          },
+        ]);
+
+        if (!proceedAnswers.proceed) {
+          console.log(chalk.yellow('Branch creation cancelled'));
+          return null;
+        }
+      }
+
+      // Build optional questions based on extraQuestions config (skip if flags provided)
       const optionalQuestions: any[] = [];
 
-      if (config.extraQuestions?.baseBranch) {
+      if (config.extraQuestions?.baseBranch && !options.baseBranch) {
         optionalQuestions.push({
           type: 'input',
           name: 'baseBranch',
@@ -238,7 +277,7 @@ export class BranchCreator {
         });
       }
 
-      if (config.extraQuestions?.checkout) {
+      if (config.extraQuestions?.checkout && options.checkout === undefined) {
         optionalQuestions.push({
           type: 'confirm',
           name: 'checkout',
@@ -247,7 +286,7 @@ export class BranchCreator {
         });
       }
 
-      if (config.extraQuestions?.pushToRemote) {
+      if (config.extraQuestions?.pushToRemote && options.pushToRemote === undefined) {
         optionalQuestions.push({
           type: 'confirm',
           name: 'pushToRemote',
@@ -258,10 +297,10 @@ export class BranchCreator {
 
       const confirmAnswers = optionalQuestions.length > 0 ? await inquirer.prompt(optionalQuestions) : {};
 
-      // Use defaults if questions were skipped
-      const baseBranch = confirmAnswers.baseBranch ?? defaultBaseBranch;
-      const shouldCheckout = confirmAnswers.checkout ?? options.checkout ?? true;
-      const shouldPush = confirmAnswers.pushToRemote ?? false;
+      // Use flag values if provided, otherwise use answers or defaults
+      const baseBranch = options.baseBranch ?? confirmAnswers.baseBranch ?? defaultBaseBranch;
+      const shouldCheckout = options.checkout ?? confirmAnswers.checkout ?? true;
+      const shouldPush = options.pushToRemote ?? confirmAnswers.pushToRemote ?? false;
 
       // Check if branch already exists
       const branches = await this.git.branchLocal();

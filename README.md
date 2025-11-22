@@ -303,9 +303,14 @@ Presets are merged in order, with explicit `rules` taking final precedence.
 
 ### `brw create`
 
-Create a new branch interactively.
+Create a new branch interactively or with pre-specified values.
 
 **Flags:**
+- `-t, --type <type>` - Pre-specify branch type (e.g., feat, fix, chore)
+- `--ticket <id>` - Pre-specify ticket ID (e.g., JIRA-123)
+- `-d, --desc <description>` - Pre-specify branch description
+- `-y, --yes` - Skip confirmation prompt
+- `--push` - Push branch to remote after creation
 - `--base <branch>` - Specify base branch (overrides config)
 - `--dry-run` - Preview without creating the branch
 
@@ -314,11 +319,69 @@ Create a new branch interactively.
 # Standard interactive creation
 brw create
 
+# Fully non-interactive - provide all values
+brw create -t feat --ticket PROJ-123 -d "add-user-auth" -y
+
+# Partial - skip some prompts
+brw create -t fix -d "resolve-login-bug"
+
+# Quick feature branch
+brw create -t feat -d "new-dashboard" --push
+
 # Create from specific base
 brw create --base main
 
 # Preview what would be created
 brw create --dry-run
+```
+
+#### Non-Interactive Usage
+
+Use flags to skip interactive prompts entirely - perfect for scripting and CI/CD:
+
+**Quick Branch Creation:**
+```bash
+# Minimal - just type and description
+brw create -t feat -d "add-oauth"
+
+# With ticket ID
+brw create -t fix --ticket BUG-456 -d "memory-leak"
+
+# Skip confirmation
+brw create -t chore -d "update-deps" -y
+```
+
+**Automation & Scripts:**
+```bash
+# CI/CD workflow
+brw create -t release -d "v2.0.0" -y --push
+
+# Batch creation script
+for feature in auth payments dashboard; do
+  brw create -t feat -d "$feature" -y
+done
+
+# Integration with ticket systems
+TICKET=$(gh issue view 123 --json number -q .number)
+brw create -t feat --ticket "GH-$TICKET" -d "implement-feature" --push
+```
+
+**Validation:**
+
+Flags are validated just like interactive input:
+- `--type` must match a configured branch type
+- `--ticket` must match the configured prefix (if rules.ticketId is set)
+- `--desc` must follow descriptionStyle and maxDescriptionLength rules
+
+**Disabling Tips:**
+
+To hide CLI tip messages globally (e.g., for experienced users):
+
+```typescript
+export default defineConfig({
+  showCliTips: false,  // Disable "you can use flags" tip
+  // ... rest of config
+});
 ```
 
 ### `brw lint [branches...]`
