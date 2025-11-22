@@ -1,0 +1,68 @@
+name: Branch Merge Policy
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  enforce:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply branch merge policy
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const base = context.payload.pull_request.base.ref;
+            const head = context.payload.pull_request.head.ref;
+            const owner = context.payload.repository.owner.login;
+            const repo = context.payload.repository.name;
+            const number = context.payload.pull_request.number;
+
+            const retarget = async (newBase) => {
+              if (newBase === base) {
+                core.info(`Base already set to '${newBase}', no retargeting needed.`);
+                return;
+              }
+
+              try {
+                await github.rest.pulls.update({
+                  owner,
+                  repo,
+                  pull_number: number,
+                  base: newBase,
+                });
+              } catch (error) {
+                core.error(`Failed to retarget pull request #${number}: ${error.message}`);
+                core.setFailed(`Unable to retarget pull request to '${newBase}'. Please update the base branch manually.`);
+                throw error;
+              }
+
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: number,
+                body: `Base branch automatically updated from \\`${base}\\` to \\`${newBase}\\` to satisfy the branch merge policy.`,
+              });
+
+              core.notice(`Retargeted PR #${number} from '${base}' to '${newBase}' for head '${head}'.`);
+              return;
+            };
+
+            if (base === 'main' && head !== 'next' && !head.startsWith('hotfix/')) {
+              const newBase = head === 'dev' ? 'next' : 'dev';
+              await retarget(newBase);
+              return;
+            }
+
+            if (base === 'next' && head !== 'main' && head !== 'dev') {
+              await retarget('dev');
+              return;
+            }
+
+            core.info(`Branch merge policy satisfied for head '${head}' targeting '${base}'.`);
+      
