@@ -18,11 +18,7 @@
       ],
       "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}"
     }],
-
-      ["@semantic-release/npm", { "npmPublish": true }],
-
-    ["@semantic-release/github", {
-      "assets": ["dist/**/*.js"]
-    }]
+    ["@semantic-release/npm", { "npmPublish": true }],
+    "@semantic-release/github"
   ]
 }
