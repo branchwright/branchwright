@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: 🔒 Report a security vulnerability
+    url: https://github.com/branchwright/branchwright/security/advisories/new
+    about: Please review our security policy for more details
   - name: Questions / usage help
-    url: https://github.com/branchwright/branchwright/discussions/new?category=q-a
+    url: https://github.com/branchwright/branchwright/discussions
     about: Use Discussions for support and how-to questions
