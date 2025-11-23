@@ -1,6 +1,6 @@
 {
   "name": "@branchwright/cli",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Git branch name linting and interactive branch creation tool",
   "private": false,
   "main": "./dist/cjs/index.js",
