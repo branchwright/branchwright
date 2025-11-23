@@ -35,6 +35,36 @@ export interface BranchTypeOption {
   label: string;
 }
 
+export interface InteractiveQuestions {
+  /** Whether to show the base branch question */
+  baseBranch?: boolean;
+  /** Whether to show the checkout question */
+  checkout?: boolean;
+  /** Whether to show the push to remote question */
+  pushToRemote?: boolean;
+}
+
+export interface QuestionConfig {
+  /** Custom text for the branch type selection prompt */
+  branchType?: string;
+  /** Custom text for the ticket ID prompt */
+  ticketId?: string;
+  /** Custom text for the required ticket ID prompt */
+  ticketIdRequired?: string;
+  /** Custom text for the description prompt */
+  description?: string;
+  /** Custom text for the description prompt when ticket ID is provided */
+  descriptionWithTicket?: string;
+  /** Custom text for the base branch prompt */
+  baseBranch?: string;
+  /** Custom text for the checkout confirmation prompt */
+  checkout?: string;
+  /** Custom text for the proceed confirmation prompt */
+  proceed?: string;
+  /** Custom text for the push to remote confirmation prompt */
+  pushToRemote?: string;
+}
+
 export interface BranchConfig {
   /** List of branch types */
   branchTypes: BranchTypeOption[];
@@ -52,6 +82,12 @@ export interface BranchConfig {
   presets?: RulePresetSource[] | undefined;
   /** Rules configuration */
   rules?: Rules;
+  /** Control which optional questions are shown during interactive branch creation */
+  extraQuestions?: InteractiveQuestions;
+  /** Customize the text of prompts shown during interactive branch creation */
+  questions?: QuestionConfig;
+  /** Show CLI tips about using flags (default: true) */
+  showCliTips?: boolean;
   /** @deprecated Use rules.ticketId instead. Ticket ID prompt mode. */
   ticketIdPrompt?: TicketIdPromptMode;
   /** @deprecated Use rules.ticketId[1].prefix instead. Ticket ID prefix */
@@ -90,6 +126,16 @@ export interface CreateBranchOptions {
   baseBranch?: string;
   /** Dry run - don't actually create the branch */
   dryRun?: boolean;
+  /** Pre-specified branch type */
+  type?: string;
+  /** Pre-specified ticket ID */
+  ticketId?: string;
+  /** Pre-specified description */
+  description?: string;
+  /** Skip proceed confirmation */
+  skipProceed?: boolean;
+  /** Push to remote after creation */
+  pushToRemote?: boolean;
 }
 
 export interface BranchwrightOptions {

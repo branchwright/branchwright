@@ -1,4 +1,4 @@
-import { defineConfig } from './src/config.js';
+import { defineConfig } from '@branchwright/cli';
 
 export default defineConfig({
   branchTypes: [
@@ -12,12 +12,15 @@ export default defineConfig({
     { name: 'refactor', label: 'refactor: Code restructuring without behavior change' },
     { name: 'revert', label: 'revert:   Revert a previous commit' },
   ],
-  maxDescriptionLength: 24,
+  maxDescriptionLength: 30,
   ignoredBranches: ['main', 'next', 'dev'],
   descriptionStyle: 'kebab-case',
   template: '{{type}}/{{ticket}}-{{desc}}',
   presets: ['recommended'],
   rules: {
     ticketId: 'off',
+  },
+  extraQuestions: {
+    pushToRemote: true,
   },
 });

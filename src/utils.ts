@@ -1,7 +1,7 @@
+import { bundleRequire } from 'bundle-require';
 import { cosmiconfig, defaultLoaders } from 'cosmiconfig';
 import type { Loaders } from 'cosmiconfig';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 
 import { DEFAULT_CONFIG } from './config.js';
 import { coreRuleRegistry, coreRules } from './rules/core.js';
@@ -173,12 +173,25 @@ const SEARCH_PLACES = [
   'branchwright.config.yml',
 ] as const;
 
+const loadTypeScriptConfig = async (filePath: string) => {
+  const { mod } = await bundleRequire({
+    filepath: filePath,
+    format: 'cjs',
+    external: ['@branchwright/cli'],
+    esbuildOptions: {
+      platform: 'node',
+      target: ['node18'],
+    },
+  });
+
+  return mod.default ?? mod;
+};
+
 const CONFIG_LOADERS = {
   ...defaultLoaders,
-  '.ts': async (filePath: string) => {
-    const module = await import(pathToFileURL(filePath).href);
-    return module.default ?? module;
-  },
+  '.ts': loadTypeScriptConfig,
+  '.cts': loadTypeScriptConfig,
+  '.mts': loadTypeScriptConfig,
 } satisfies Loaders;
 
 const explorer = cosmiconfig(MODULE_NAME, {
@@ -259,7 +272,13 @@ export async function loadConfigWithMeta(options: LoadConfigOptions = {}): Promi
     return resultPayload;
   } catch (error) {
     console.error('Failed to load Branchwright configuration. Falling back to defaults.');
-    console.error(error);
+    if (process.env.BRANCHWRIGHT_DEBUG === 'true') {
+      console.error(error);
+    } else if (error instanceof Error) {
+      console.error(error.message);
+    } else {
+      console.error(String(error));
+    }
     const fallbackConfig: BranchConfig = {
       ...DEFAULT_CONFIG,
       branchTypes: [...DEFAULT_CONFIG.branchTypes],
