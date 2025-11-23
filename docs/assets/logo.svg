@@ -1,0 +1,12 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background tint: adjust here if needed -->
+  <rect width="256" height="256" rx="48" fill="#3A6FF7"/>
+  
+  <circle cx="128" cy="64" r="28" fill="#ffffff"/>
+  <circle cx="64" cy="192" r="28" fill="#ffffff"/>
+  <circle cx="192" cy="192" r="28" fill="#ffffff"/>
+
+  <path d="M128 92L128 164" stroke="#ffffff" stroke-width="28" stroke-linecap="round"/>
+  <path d="M128 164L64 192" stroke="#ffffff" stroke-width="28" stroke-linecap="round"/>
+  <path d="M128 164L192 192" stroke="#ffffff" stroke-width="28" stroke-linecap="round" opacity="0.35"/>
+</svg>
