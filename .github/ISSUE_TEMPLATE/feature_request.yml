@@ -1,0 +1,19 @@
+name: Feature request
+description: Proposal aligned with the project scope
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes: { label: Problem statement (not solution) }
+    validations: { required: true }
+  - type: textarea
+    id: proposal
+    attributes: { label: Proposed solution (CLI flags, config fields, UX) }
+    validations: { required: true }
+  - type: checkboxes
+    id: fit
+    attributes:
+      label: Scope fit
+      options:
+        - label: This fits the creation-first, zero-runtime-deps scope
+          required: true

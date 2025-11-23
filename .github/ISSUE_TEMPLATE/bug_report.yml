@@ -1,0 +1,44 @@
+name: Bug report
+description: Something broke or behaves unexpectedly
+labels: [bug, needs-repro]
+body:
+  - type: textarea
+    id: summary
+    attributes: { label: Summary, placeholder: Short, direct description }
+    validations: { required: true }
+  - type: input
+    id: version
+    attributes: { label: Branchwright version, placeholder: 1.0.0 }
+    validations: { required: true }
+  - type: input
+    id: node
+    attributes: { label: Node version, placeholder: "node -v" }
+    validations: { required: true }
+  - type: input
+    id: os
+    attributes: { label: OS, placeholder: "Ubuntu 24.04 / macOS 15 / Windows 11" }
+    validations: { required: true }
+  - type: textarea
+    id: config
+    attributes: { label: Relevant config, render: json }
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps and the exact command(s) you ran
+      placeholder: |
+        1. npx brw create --type feat --desc "..."
+        2. ...
+  - type: textarea
+    id: expected
+    attributes: { label: Expected behavior }
+  - type: textarea
+    id: actual
+    attributes: { label: Actual behavior + error output, render: text }
+  - type: checkboxes
+    id: repro
+    attributes:
+      label: Reproducibility
+      options:
+        - label: I can reproduce this in a fresh repo with only @branchwright/cli installed
+          required: true
