@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/branchwright/branchwright/compare/v1.0.0...v1.0.1) (2025-11-23)
+
+
+### Bug Fixes
+
+* fix package.json version, homepage, and keywords ([07bae81](https://github.com/branchwright/branchwright/commit/07bae8194a51c0b2ca3530e0c7eacca6e8433ee4))
+
 # 1.0.0 (2025-11-23)
 
 
