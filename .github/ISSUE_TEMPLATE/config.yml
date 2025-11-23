@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions / usage help
+    url: https://github.com/branchwright/branchwright/discussions/new?category=q-a
+    about: Use Discussions for support and how-to questions
