@@ -307,19 +307,33 @@ main section h3 {
     background-color: var(--code-bg);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 1.5rem;
-    overflow-x: auto;
+    padding: 0;
+    overflow: hidden;
 }
 
 .code-block pre {
     margin: 0;
+    padding: 1.5rem;
+    overflow-x: auto;
 }
 
 .code-block code {
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     font-size: 0.95rem;
     line-height: 1.5;
-    color: var(--text-color);
+}
+
+/* Override highlight.js theme based on our theme */
+[data-theme="dark"] .hljs,
+[data-theme="dark"] .code-block pre code {
+    background-color: var(--code-bg) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .hljs,
+    :root:not([data-theme="light"]) .code-block pre code {
+        background-color: var(--code-bg) !important;
+    }
 }
 
 /* Content Sections */
