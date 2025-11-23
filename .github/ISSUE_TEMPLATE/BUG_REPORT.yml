@@ -1,26 +1,46 @@
 name: Bug report
 description: Something broke or behaves unexpectedly
-labels: [bug, needs-repro]
+labels:
+  - bug
+  - needs-repro
 body:
   - type: textarea
     id: summary
-    attributes: { label: Summary, placeholder: Short, direct description }
-    validations: { required: true }
+    attributes:
+      label: Summary
+      placeholder: Short, direct description
+    validations:
+      required: true
+
   - type: input
     id: version
-    attributes: { label: Branchwright version, placeholder: 1.0.0 }
-    validations: { required: true }
+    attributes:
+      label: Branchwright version
+      placeholder: 1.0.0
+    validations:
+      required: true
+
   - type: input
     id: node
-    attributes: { label: Node version, placeholder: "node -v" }
-    validations: { required: true }
+    attributes:
+      label: Node version
+      placeholder: node -v
+    validations:
+      required: true
+
   - type: input
     id: os
-    attributes: { label: OS, placeholder: "Ubuntu 24.04 / macOS 15 / Windows 11" }
-    validations: { required: true }
+    attributes:
+      label: OS
+      placeholder: Ubuntu 24.04 / macOS 15 / Windows 11
+    validations:
+      required: true
+
   - type: textarea
     id: config
-    attributes: { label: Relevant config, render: json }
+    attributes:
+      label: Relevant config
+
   - type: textarea
     id: steps
     attributes:
@@ -29,12 +49,19 @@ body:
       placeholder: |
         1. npx brw create --type feat --desc "..."
         2. ...
+    validations:
+      required: false
+
   - type: textarea
     id: expected
-    attributes: { label: Expected behavior }
+    attributes:
+      label: Expected behavior
+
   - type: textarea
     id: actual
-    attributes: { label: Actual behavior + error output, render: text }
+    attributes:
+      label: Actual behavior + error output
+
   - type: checkboxes
     id: repro
     attributes:
