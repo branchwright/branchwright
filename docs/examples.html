@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Branchwright Examples - Real-world usage patterns and configurations">
+    <title>Examples - Branchwright</title>
+    <link rel="stylesheet" href="./assets/style.css">
+    <link rel="icon" type="image/svg+xml" href="../assets/logo.svg">
+    <script src="./assets/theme.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <img src="../assets/logo.svg" alt="Branchwright" class="logo">
+                <span class="brand-name">Branchwright</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="./index.html">Home</a></li>
+                <li><a href="./getting-started.html">Getting Started</a></li>
+                <li><a href="./configuration.html">Configuration</a></li>
+                <li><a href="./api.html">API</a></li>
+                <li><a href="./examples.html">Examples</a></li>
+                <li><a href="https://github.com/branchwright/branchwright" target="_blank">GitHub</a></li>
+                <li><button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">🌙</button></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="doc-content">
+            <h1>Examples</h1>
+            <p>Real-world configurations and usage patterns for different team workflows.</p>
+
+            <h2>Team Configurations</h2>
+
+            <h3>Small Startup Team</h3>
+            <p>Simple, flexible setup with optional ticket IDs:</p>
+            <div class="code-block">
+                <pre><code>import { defineConfig } from '@branchwright/cli';
+
+export default defineConfig({
+  branchTypes: [
+    { name: 'feat', label: '✨ Feature' },
+    { name: 'fix', label: '🐛 Bug Fix' },
+    { name: 'chore', label: '🔧 Chore' },
+  ],
+  
+  template: '{{type}}/{{desc}}',
+  maxDescriptionLength: 40,
+  
+  // No ticket requirements
+  rules: {
+    ticketId: 'off',
+  },
+  
+  // Streamlined workflow
+  extraQuestions: {
+    baseBranch: false,
+    checkout: false,
+    pushToRemote: false,
+  },
+});</code></pre>
+            </div>
+
+            <h3>Enterprise Team with Jira</h3>
+            <p>Strict naming with required Jira tickets:</p>
+            <div class="code-block">
+                <pre><code>import { defineConfig } from '@branchwright/cli';
+
+export default defineConfig({
+  branchTypes: [
+    { name: 'feature', label: 'Feature' },
+    { name: 'bugfix', label: 'Bug Fix' },
+    { name: 'hotfix', label: 'Hotfix' },
+    { name: 'release', label: 'Release' },
+  ],
+  
+  template: '{{type}}/{{ticket}}-{{desc}}',
+  maxDescriptionLength: 50,
+  descriptionStyle: 'kebab-case',
+  
+  rules: {
+    ticketId: ['required', { 
+      prefix: 'PROJ-',
+      pattern: /^PROJ-\d+$/,
+      message: 'Ticket must be format: PROJ-123'
+    }],
+  },
+  
+  ignoredBranches: [
+    'main',
+    'master', 
+    'develop',
+    'staging',
+    'production'
+  ],
+  
+  questions: {
+    branchType: 'Select work type:',
+    ticketIdRequired: 'Enter Jira ticket (PROJ-###):',
+    description: 'Brief description (kebab-case):',
+  },
+});</code></pre>
+            </div>
+
+            <h3>GitHub Flow Team</h3>
+            <p>Optimized for GitHub issues and pull requests:</p>
+            <div class="code-block">
+                <pre><code>import { defineConfig } from '@branchwright/cli';
+
+export default defineConfig({
+  branchTypes: [
+    { name: 'feat', label: 'Feature' },
+    { name: 'fix', label: 'Fix' },
+    { name: 'docs', label: 'Documentation' },
+    { name: 'refactor', label: 'Refactor' },
+  ],
+  
+  template: '{{type}}/{{ticket}}-{{desc}}',
+  
+  rules: {
+    ticketId: ['optional', { 
+      prefix: 'gh-',
+      pattern: /^gh-\d+$/
+    }],
+  },
+  
+  questions: {
+    ticketId: 'GitHub issue number (optional):',
+    description: 'PR description:',
+  },
+});</code></pre>
+            </div>
+
+            <h3>Monorepo Configuration</h3>
+            <p>Include package/workspace names in branches:</p>
+            <div class="code-block">
+                <pre><code>import { defineConfig } from '@branchwright/cli';
+
+export default defineConfig({
+  branchTypes: [
+    { name: 'feat', label: 'Feature' },
+    { name: 'fix', label: 'Fix' },
+    { name: 'chore', label: 'Chore' },
+  ],
+  
+  // Custom template with package name
+  template: '{{type}}/{{package}}-{{desc}}',
+  
+  // In practice, you might prompt for package
+  // or detect it from the current directory
+});</code></pre>
+            </div>
+
+            <h2>CI/CD Integration</h2>
+
+            <h3>GitHub Actions Validation</h3>
+            <div class="code-block">
+                <pre><code># .github/workflows/validate-branch.yml
+name: Validate Branch Name
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install Branchwright
+        run: npm install -g @branchwright/cli
+      
+      - name: Validate Branch Name
+        run: brw lint ${{ github.head_ref }}
+        env:
+          BRANCH_NAME: ${{ github.head_ref }}</code></pre>
+            </div>
+
+            <h3>GitLab CI Validation</h3>
+            <div class="code-block">
+                <pre><code># .gitlab-ci.yml
+validate-branch:
+  stage: validate
+  image: node:20
+  script:
+    - npm install -g @branchwright/cli
+    - brw lint $CI_COMMIT_REF_NAME
+  only:
+    - merge_requests</code></pre>
+            </div>
+
+            <h3>Husky Pre-push Hook</h3>
+            <div class="code-block">
+                <pre><code># Install husky
+npm install --save-dev husky
+npx husky init
+
+# .husky/pre-push
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Validate branch name before push
+npx @branchwright/cli lint || {
+  echo ""
+  echo "❌ Branch name validation failed"
+  echo "Fix your branch name or use:"
+  echo "  brw create"
+  exit 1
+}</code></pre>
+            </div>
+
+            <h2>Scripting Examples</h2>
+
+            <h3>Batch Branch Creation</h3>
+            <div class="code-block">
+                <pre><code>#!/bin/bash
+
+# Create multiple feature branches from a list
+features=(
+  "user-authentication"
+  "payment-integration"
+  "email-notifications"
+  "admin-dashboard"
+)
+
+for feature in "${features[@]}"; do
+  brw create -t feat -d "$feature" -y
+  echo "Created feat/$feature"
+done</code></pre>
+            </div>
+
+            <h3>Ticket-Based Branch Creation</h3>
+            <div class="code-block">
+                <pre><code>#!/bin/bash
+
+# Create branch from Jira ticket
+TICKET=$1
+DESCRIPTION=$2
+
+if [ -z "$TICKET" ] || [ -z "$DESCRIPTION" ]; then
+  echo "Usage: ./create-jira-branch.sh PROJ-123 'description'"
+  exit 1
+fi
+
+brw create -t feat --ticket "$TICKET" -d "$description" -y --push</code></pre>
+            </div>
+
+            <h3>Integration with gh (GitHub CLI)</h3>
+            <div class="code-block">
+                <pre><code>#!/bin/bash
+
+# Create branch from GitHub issue
+ISSUE_NUMBER=$(gh issue view --json number -q .number)
+ISSUE_TITLE=$(gh issue view --json title -q .title | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+
+brw create -t feat --ticket "gh-$ISSUE_NUMBER" -d "$ISSUE_TITLE" -y
+
+# Create PR
+gh pr create --title "feat: $ISSUE_TITLE" --body "Closes #$ISSUE_NUMBER"</code></pre>
+            </div>
+
+            <h2>Custom Rule Examples</h2>
+
+            <h3>Enforce Team Prefix</h3>
+            <div class="code-block">
+                <pre><code>import { defineRule, defineConfig } from '@branchwright/cli';
+
+const teamPrefixRule = defineRule(
+  {
+    id: 'team-prefix',
+    meta: {
+      title: 'Team prefix required',
+      description: 'Branch must include team identifier',
+    },
+    defaultSeverity: 'required',
+  },
+  (context) => {
+    const { teams } = context.options;
+    const hasTeamPrefix = teams.some(team => 
+      context.branchName.includes(`-${team}-`)
+    );
+    
+    if (!hasTeamPrefix) {
+      return {
+        message: `Branch must include team: ${teams.join(', ')}`,
+        suggestions: teams.map(t => 
+          context.branchName.replace('-', `-${t}-`)
+        ),
+      };
+    }
+    return null;
+  }
+);
+
+export default defineConfig({
+  rules: {
+    'team-prefix': ['required', { 
+      teams: ['frontend', 'backend', 'mobile'] 
+    }],
+  },
+});</code></pre>
+            </div>
+
+            <h3>Prevent WIP Branches</h3>
+            <div class="code-block">
+                <pre><code>import { defineRule, defineConfig } from '@branchwright/cli';
+
+const noWipRule = defineRule(
+  {
+    id: 'no-wip',
+    meta: {
+      title: 'No WIP branches',
+      description: 'Work-in-progress markers not allowed',
+    },
+    defaultSeverity: 'required',
+  },
+  (context) => {
+    const wipPatterns = ['wip', 'tmp', 'temp', 'test'];
+    const hasWip = wipPatterns.some(pattern =>
+      context.branchName.toLowerCase().includes(pattern)
+    );
+    
+    if (hasWip) {
+      return {
+        message: 'Remove work-in-progress markers from branch name',
+        suggestions: [
+          wipPatterns.reduce(
+            (name, pattern) => name.replace(pattern, ''),
+            context.branchName
+          ),
+        ],
+      };
+    }
+    return null;
+  }
+);
+
+export default defineConfig({
+  rules: {
+    'no-wip': 'required',
+  },
+});</code></pre>
+            </div>
+
+            <h3>Maximum Branch Age</h3>
+            <div class="code-block">
+                <pre><code>import { defineRule, defineConfig } from '@branchwright/cli';
+import { execSync } from 'child_process';
+
+const maxAgeRule = defineRule(
+  {
+    id: 'max-age',
+    meta: {
+      title: 'Branch age limit',
+      description: 'Branches older than X days should be cleaned up',
+    },
+    defaultSeverity: 'optional',
+  },
+  (context) => {
+    const { maxDays } = context.options;
+    
+    // Get branch creation date
+    const timestamp = execSync(
+      `git log --format=%ct ${context.branchName} | tail -1`
+    ).toString();
+    
+    const ageInDays = (Date.now() - parseInt(timestamp) * 1000) / (1000 * 60 * 60 * 24);
+    
+    if (ageInDays > maxDays) {
+      return {
+        message: `Branch is ${Math.floor(ageInDays)} days old (max: ${maxDays})`,
+      };
+    }
+    return null;
+  }
+);
+
+export default defineConfig({
+  rules: {
+    'max-age': ['optional', { maxDays: 30 }],
+  },
+});</code></pre>
+            </div>
+
+            <h2>Advanced Workflows</h2>
+
+            <h3>Multi-Environment Setup</h3>
+            <div class="code-block">
+                <pre><code>import { defineConfig } from '@branchwright/cli';
+
+export default defineConfig({
+  branchTypes: [
+    { name: 'feat', label: 'Feature' },
+    { name: 'fix', label: 'Fix' },
+    { name: 'release', label: 'Release' },
+    { name: 'hotfix', label: 'Hotfix' },
+  ],
+  
+  template: '{{type}}/{{env}}-{{desc}}',
+  
+  ignoredBranches: [
+    'main',
+    'develop',
+    'staging',
+    'production',
+  ],
+  
+  // Custom prompts for environment
+  questions: {
+    environment: 'Target environment:',
+  },
+});</code></pre>
+            </div>
+
+            <h3>Semantic Release Integration</h3>
+            <div class="code-block">
+                <pre><code>import { defineConfig } from '@branchwright/cli';
+
+export default defineConfig({
+  // Match semantic-release branch types
+  branchTypes: [
+    { name: 'feat', label: 'Feature (minor)' },
+    { name: 'fix', label: 'Fix (patch)' },
+    { name: 'perf', label: 'Performance (patch)' },
+    { name: 'revert', label: 'Revert (patch)' },
+  ],
+  
+  template: '{{type}}/{{desc}}',
+  
+  // Enforce conventional commit style
+  descriptionStyle: 'kebab-case',
+  maxDescriptionLength: 50,
+});</code></pre>
+            </div>
+
+            <h3>Release Train Workflow</h3>
+            <div class="code-block">
+                <pre><code>import { defineConfig } from '@branchwright/cli';
+
+export default defineConfig({
+  branchTypes: [
+    { name: 'feat', label: 'Feature' },
+    { name: 'fix', label: 'Fix' },
+    { name: 'release', label: 'Release Branch' },
+  ],
+  
+  template: '{{type}}/{{version}}-{{desc}}',
+  
+  ignoredBranches: [
+    'main',
+    'develop',
+    /^release\/v\d+\.\d+$/,  // release/v1.2
+  ],
+});</code></pre>
+            </div>
+
+            <div class="doc-nav">
+                <a href="./api.html">← API Reference</a>
+                <a href="./index.html">Home →</a>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Branchwright. Released under the MIT License.</p>
+            <div class="footer-links">
+                <a href="https://github.com/branchwright/branchwright">GitHub</a>
+                <a href="https://www.npmjs.com/package/@branchwright/cli">npm</a>
+                <a href="https://github.com/branchwright/branchwright/issues">Issues</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

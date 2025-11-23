@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Getting Started with Branchwright - Installation and Quick Start Guide">
+    <title>Getting Started - Branchwright</title>
+    <link rel="stylesheet" href="./assets/style.css">
+    <link rel="icon" type="image/svg+xml" href="../assets/logo.svg">
+    <script src="./assets/theme.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <img src="../assets/logo.svg" alt="Branchwright" class="logo">
+                <span class="brand-name">Branchwright</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="./index.html">Home</a></li>
+                <li><a href="./getting-started.html">Getting Started</a></li>
+                <li><a href="./configuration.html">Configuration</a></li>
+                <li><a href="./api.html">API</a></li>
+                <li><a href="./examples.html">Examples</a></li>
+                <li><a href="https://github.com/branchwright/branchwright" target="_blank">GitHub</a></li>
+                <li><button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">🌙</button></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="doc-content">
+            <h1>Getting Started</h1>
+            <p>Get up and running with Branchwright in minutes.</p>
+
+            <h2>Installation</h2>
+            <p>Branchwright can be installed globally, locally in your project, or used without installation via npx.</p>
+
+            <h3>Global Installation (Recommended)</h3>
+            <div class="code-block">
+                <pre><code>npm install -g @branchwright/cli</code></pre>
+            </div>
+            <p>With global installation, you can use <code>brw</code> or <code>branchwright</code> commands anywhere.</p>
+
+            <h3>Local Installation</h3>
+            <div class="code-block">
+                <pre><code>npm install --save-dev @branchwright/cli</code></pre>
+            </div>
+            <p>Local installation is great for team projects where everyone should use the same version.</p>
+
+            <h3>No Installation (npx)</h3>
+            <div class="code-block">
+                <pre><code>npx @branchwright/cli create</code></pre>
+            </div>
+            <p>Try Branchwright without installing it first.</p>
+
+            <h2>Quick Start</h2>
+            
+            <h3>Create Your First Branch</h3>
+            <div class="code-block">
+                <pre><code># Run the interactive branch creator
+brw create
+
+# Or with npx
+npx @branchwright/cli create</code></pre>
+            </div>
+            
+            <p>You'll be guided through a simple workflow:</p>
+            <ol>
+                <li><strong>Select branch type:</strong> Choose from feat, fix, chore, or custom types</li>
+                <li><strong>Enter ticket ID (optional):</strong> Link to your issue tracker</li>
+                <li><strong>Describe your branch:</strong> Short, meaningful description</li>
+                <li><strong>Confirm:</strong> Review and create</li>
+            </ol>
+
+            <p>Branchwright will:</p>
+            <ul>
+                <li>Create the branch with a properly formatted name</li>
+                <li>Automatically switch to the new branch (by default)</li>
+                <li>Base it off your current branch (by default)</li>
+            </ul>
+
+            <h3>Validate Branch Names</h3>
+            <div class="code-block">
+                <pre><code># Validate current branch
+brw lint
+
+# Validate specific branch
+brw lint feature/user-auth
+
+# Validate all branches
+brw lint --all</code></pre>
+            </div>
+
+            <h2>Basic Configuration</h2>
+            <p>Create a <code>branchwright.config.ts</code> file in your project root to customize behavior:</p>
+
+            <div class="code-block">
+                <pre><code>import { defineConfig } from '@branchwright/cli';
+
+export default defineConfig({
+  branchTypes: [
+    { name: 'feat', label: 'Feature' },
+    { name: 'fix', label: 'Bug Fix' },
+    { name: 'chore', label: 'Chore' },
+    { name: 'docs', label: 'Documentation' },
+  ],
+  
+  template: '{{type}}/{{ticket}}-{{desc}}',
+  
+  rules: {
+    ticketId: ['optional', { prefix: 'PROJ-' }],
+  },
+});</code></pre>
+            </div>
+
+            <h2>Common Workflows</h2>
+
+            <h3>Feature Development</h3>
+            <div class="code-block">
+                <pre><code># Create feature branch
+brw create
+# Select: feat
+# Ticket: PROJ-123
+# Description: user authentication
+# Creates: feat/PROJ-123-user-authentication
+
+# Work on your feature
+git add .
+git commit -m "feat: implement user auth"
+
+# Push when ready
+git push origin feat/PROJ-123-user-authentication</code></pre>
+            </div>
+
+            <h3>Bug Fixes</h3>
+            <div class="code-block">
+                <pre><code># Create bugfix branch
+brw create
+# Select: fix
+# Ticket: PROJ-456
+# Description: login redirect
+# Creates: fix/PROJ-456-login-redirect
+
+# Fix the bug
+git add .
+git commit -m "fix: correct login redirect"
+
+# Push the fix
+git push origin fix/PROJ-456-login-redirect</code></pre>
+            </div>
+
+            <h3>Validate Before Push</h3>
+            <div class="code-block">
+                <pre><code># Check your branch name is valid
+brw lint
+
+# If valid, push
+git push origin $(git branch --show-current)</code></pre>
+            </div>
+
+            <h2>CLI Commands</h2>
+
+            <h3><code>brw create</code></h3>
+            <p>Launch the interactive branch creation wizard.</p>
+            <div class="code-block">
+                <pre><code>brw create [options]
+
+Options:
+  --no-checkout   Don't switch to new branch
+  --push          Push to remote after creation
+  --help          Show help</code></pre>
+            </div>
+
+            <h3><code>brw lint</code></h3>
+            <p>Validate branch names against your configured rules.</p>
+            <div class="code-block">
+                <pre><code>brw lint [branch-name] [options]
+
+Arguments:
+  branch-name     Branch to validate (default: current)
+
+Options:
+  --all           Validate all branches
+  --json          Output JSON format
+  --help          Show help</code></pre>
+            </div>
+
+            <h3><code>brw config</code></h3>
+            <p>Display current configuration.</p>
+            <div class="code-block">
+                <pre><code>brw config [options]
+
+Options:
+  --json          Output JSON format
+  --help          Show help</code></pre>
+            </div>
+
+            <h2>Next Steps</h2>
+            <ul>
+                <li><a href="./configuration.html">Learn about configuration options</a></li>
+                <li><a href="./api.html">Explore the programmatic API</a></li>
+                <li><a href="./examples.html">See real-world examples</a></li>
+            </ul>
+
+            <div class="doc-nav">
+                <a href="./index.html">← Home</a>
+                <a href="./configuration.html">Configuration →</a>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Branchwright. Released under the MIT License.</p>
+            <div class="footer-links">
+                <a href="https://github.com/branchwright/branchwright">GitHub</a>
+                <a href="https://www.npmjs.com/package/@branchwright/cli">npm</a>
+                <a href="https://github.com/branchwright/branchwright/issues">Issues</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

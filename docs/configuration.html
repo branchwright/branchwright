@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Branchwright Configuration Guide - Customize branch naming and validation">
+    <title>Configuration - Branchwright</title>
+    <link rel="stylesheet" href="./assets/style.css">
+    <link rel="icon" type="image/svg+xml" href="../assets/logo.svg">
+    <script src="./assets/theme.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <img src="../assets/logo.svg" alt="Branchwright" class="logo">
+                <span class="brand-name">Branchwright</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="./index.html">Home</a></li>
+                <li><a href="./getting-started.html">Getting Started</a></li>
+                <li><a href="./configuration.html">Configuration</a></li>
+                <li><a href="./api.html">API</a></li>
+                <li><a href="./examples.html">Examples</a></li>
+                <li><a href="https://github.com/branchwright/branchwright" target="_blank">GitHub</a></li>
+                <li><button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">🌙</button></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="doc-content">
+            <h1>Configuration</h1>
+            <p>Customize Branchwright to match your team's workflow and naming conventions.</p>
+
+            <h2>Configuration File</h2>
+            <p>Create <code>branchwright.config.ts</code> in your project root:</p>
+
+            <div class="code-block">
+                <pre><code>import { defineConfig } from '@branchwright/cli';
+
+export default defineConfig({
+  // Your configuration here
+});</code></pre>
+            </div>
+
+            <h2>Configuration Options</h2>
+
+            <h3>Branch Types</h3>
+            <p>Define the types of branches your team uses:</p>
+            
+            <div class="code-block">
+                <pre><code>branchTypes: [
+  { name: 'feat', label: 'Feature' },
+  { name: 'fix', label: 'Bug Fix' },
+  { name: 'chore', label: 'Chore' },
+  { name: 'docs', label: 'Documentation' },
+  { name: 'refactor', label: 'Refactor' },
+  { name: 'test', label: 'Testing' },
+]</code></pre>
+            </div>
+
+            <p><strong>Options:</strong></p>
+            <ul>
+                <li><code>name</code> - Short identifier used in branch names</li>
+                <li><code>label</code> - User-friendly display name in prompts</li>
+            </ul>
+
+            <h3>Template</h3>
+            <p>Define your branch naming pattern using placeholders:</p>
+
+            <div class="code-block">
+                <pre><code>template: '{{type}}/{{ticket}}-{{desc}}'</code></pre>
+            </div>
+
+            <p><strong>Available placeholders:</strong></p>
+            <ul>
+                <li><code>{{type}}</code> - Branch type (feat, fix, etc.)</li>
+                <li><code>{{ticket}}</code> - Ticket/issue ID</li>
+                <li><code>{{desc}}</code> - Description</li>
+            </ul>
+
+            <p><strong>Common patterns:</strong></p>
+            <div class="code-block">
+                <pre><code>// Type and description only
+'{{type}}/{{desc}}'
+// Result: feat/user-authentication
+
+// With ticket prefix
+'{{type}}/{{ticket}}-{{desc}}'
+// Result: feat/PROJ-123-user-authentication
+
+// Ticket first
+'{{ticket}}/{{type}}-{{desc}}'
+// Result: PROJ-123/feat-user-authentication
+
+// Simple flat structure
+'{{type}}-{{desc}}'
+// Result: feat-user-authentication</code></pre>
+            </div>
+
+            <h3>Description Settings</h3>
+
+            <div class="code-block">
+                <pre><code>maxDescriptionLength: 50,
+descriptionStyle: 'kebab-case'</code></pre>
+            </div>
+
+            <p><strong>Description styles:</strong></p>
+            <ul>
+                <li><code>kebab-case</code> - user-authentication (default)</li>
+                <li><code>snake_case</code> - user_authentication</li>
+                <li><code>camelCase</code> - userAuthentication</li>
+                <li><code>PascalCase</code> - UserAuthentication</li>
+            </ul>
+
+            <h3>Ignored Branches</h3>
+            <p>Branches that should be excluded from validation:</p>
+
+            <div class="code-block">
+                <pre><code>ignoredBranches: ['main', 'master', 'dev', 'staging', 'production']</code></pre>
+            </div>
+
+            <h3>Extra Questions</h3>
+            <p>Enable optional prompts during branch creation:</p>
+
+            <div class="code-block">
+                <pre><code>extraQuestions: {
+  baseBranch: false,    // Ask which branch to base from
+  checkout: false,      // Ask whether to switch to new branch
+  pushToRemote: false,  // Ask whether to push to remote
+}</code></pre>
+            </div>
+
+            <p>All default to <code>false</code> for a streamlined workflow. When disabled:</p>
+            <ul>
+                <li><strong>baseBranch:</strong> Uses current branch</li>
+                <li><strong>checkout:</strong> Automatically switches to new branch</li>
+                <li><strong>pushToRemote:</strong> Does not push (you push manually)</li>
+            </ul>
+
+            <h3>Custom Prompts</h3>
+            <p>Override default prompt text:</p>
+
+            <div class="code-block">
+                <pre><code>questions: {
+  branchType: 'What type of work is this?',
+  ticketId: 'Enter ticket number (optional):',
+  description: 'Brief description:',
+  baseBranch: 'Create from which branch?',
+  checkout: 'Switch to this branch now?',
+  pushToRemote: 'Push to origin?',
+}</code></pre>
+            </div>
+
+            <h2>Rules Configuration</h2>
+
+            <h3>Ticket ID Rules</h3>
+            <p>Control ticket ID requirements and format:</p>
+
+            <div class="code-block">
+                <pre><code>rules: {
+  // No validation
+  ticketId: 'off',
+  
+  // Optional with prefix
+  ticketId: ['optional', { prefix: 'PROJ-' }],
+  
+  // Required with prefix
+  ticketId: ['required', { prefix: 'TEAM-' }],
+  
+  // Required with pattern
+  ticketId: ['required', { 
+    pattern: /^[A-Z]+-\d+$/,
+    message: 'Ticket must be format: ABC-123'
+  }],
+}</code></pre>
+            </div>
+
+            <h3>Custom Rules</h3>
+            <p>Define your own validation rules:</p>
+
+            <div class="code-block">
+                <pre><code>import { defineRule, createRegistry, coreRuleRegistry } from '@branchwright/cli';
+
+const noWipRule = defineRule(
+  {
+    id: 'no-wip',
+    meta: {
+      title: 'Disallow WIP branches',
+      description: 'Prevents work-in-progress markers',
+    },
+    defaultSeverity: 'required',
+  },
+  (context) => {
+    if (context.branchName.includes('wip')) {
+      return { 
+        message: 'Remove "wip" from branch name',
+        suggestions: [context.branchName.replace('wip', '')]
+      };
+    }
+    return null;
+  }
+);
+
+export default defineConfig({
+  rules: {
+    'no-wip': 'required',
+  },
+});</code></pre>
+            </div>
+
+            <h3>Rule Plugins</h3>
+            <p>Load rules from external modules:</p>
+
+            <div class="code-block">
+                <pre><code>export default defineConfig({
+  plugins: [
+    './config/custom-rules.ts',  // Local file
+    '@company/branchwright-rules', // npm package
+  ],
+  rules: {
+    'custom-rule': 'required',
+    'company/naming': ['optional', { strict: true }],
+  },
+});</code></pre>
+            </div>
+
+            <h3>Rule Presets</h3>
+            <p>Use predefined rule configurations:</p>
+
+            <div class="code-block">
+                <pre><code>export default defineConfig({
+  presets: [
+    'recommended',           // Built-in preset
+    '@company/strict',       // Package preset
+  ],
+  rules: {
+    // Override preset defaults
+    ticketId: 'required',
+  },
+});</code></pre>
+            </div>
+
+            <h2>Complete Example</h2>
+
+            <div class="code-block">
+                <pre><code>import { defineConfig } from '@branchwright/cli';
+
+export default defineConfig({
+  // Branch types
+  branchTypes: [
+    { name: 'feat', label: '✨ Feature' },
+    { name: 'fix', label: '🐛 Bug Fix' },
+    { name: 'chore', label: '🔧 Chore' },
+    { name: 'docs', label: '📚 Documentation' },
+    { name: 'refactor', label: '♻️  Refactor' },
+  ],
+
+  // Branch name format
+  template: '{{type}}/{{ticket}}-{{desc}}',
+  maxDescriptionLength: 50,
+  descriptionStyle: 'kebab-case',
+
+  // Validation rules
+  rules: {
+    ticketId: ['optional', { prefix: 'PROJ-' }],
+  },
+
+  // Protected branches
+  ignoredBranches: ['main', 'master', 'dev', 'staging'],
+
+  // Streamlined workflow (minimal prompts)
+  extraQuestions: {
+    baseBranch: false,
+    checkout: false,
+    pushToRemote: false,
+  },
+
+  // Custom prompt text
+  questions: {
+    branchType: 'Select branch type:',
+    description: 'Describe your changes:',
+  },
+});</code></pre>
+            </div>
+
+            <h2>Team Configurations</h2>
+
+            <h3>Monorepo Setup</h3>
+            <div class="code-block">
+                <pre><code>// Prefix with package name
+template: '{{package}}/{{type}}/{{desc}}'</code></pre>
+            </div>
+
+            <h3>Jira Integration</h3>
+            <div class="code-block">
+                <pre><code>template: '{{type}}/{{ticket}}-{{desc}}',
+rules: {
+  ticketId: ['required', { 
+    prefix: 'PROJ-',
+    pattern: /^PROJ-\d+$/
+  }],
+}</code></pre>
+            </div>
+
+            <h3>Linear Integration</h3>
+            <div class="code-block">
+                <pre><code>template: '{{type}}/{{ticket}}-{{desc}}',
+rules: {
+  ticketId: ['optional', { 
+    pattern: /^[A-Z]+-\d+$/
+  }],
+}</code></pre>
+            </div>
+
+            <div class="doc-nav">
+                <a href="./getting-started.html">← Getting Started</a>
+                <a href="./api.html">API Reference →</a>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Branchwright. Released under the MIT License.</p>
+            <div class="footer-links">
+                <a href="https://github.com/branchwright/branchwright">GitHub</a>
+                <a href="https://www.npmjs.com/package/@branchwright/cli">npm</a>
+                <a href="https://github.com/branchwright/branchwright/issues">Issues</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

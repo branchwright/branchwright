@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Branchwright API Reference - Programmatic usage and integration">
+    <title>API Reference - Branchwright</title>
+    <link rel="stylesheet" href="./assets/style.css">
+    <link rel="icon" type="image/svg+xml" href="../assets/logo.svg">
+    <script src="./assets/theme.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <img src="../assets/logo.svg" alt="Branchwright" class="logo">
+                <span class="brand-name">Branchwright</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="./index.html">Home</a></li>
+                <li><a href="./getting-started.html">Getting Started</a></li>
+                <li><a href="./configuration.html">Configuration</a></li>
+                <li><a href="./api.html">API</a></li>
+                <li><a href="./examples.html">Examples</a></li>
+                <li><a href="https://github.com/branchwright/branchwright" target="_blank">GitHub</a></li>
+                <li><button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">🌙</button></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="doc-content">
+            <h1>API Reference</h1>
+            <p>Use Branchwright programmatically in your Node.js applications.</p>
+
+            <h2>Main API</h2>
+
+            <h3>Branchwright Class</h3>
+            <p>The main interface for programmatic usage:</p>
+
+            <div class="code-block">
+                <pre><code>import { Branchwright } from '@branchwright/cli';
+
+const branchwright = new Branchwright(config?);</code></pre>
+            </div>
+
+            <h4>Constructor</h4>
+            <div class="code-block">
+                <pre><code>new Branchwright(config?: BranchwrightConfig)</code></pre>
+            </div>
+            <p>Creates a new instance with optional configuration. If no config is provided, it will attempt to load from <code>branchwright.config.ts</code>.</p>
+
+            <h4>Methods</h4>
+
+            <h5><code>validate(branchName: string): Promise&lt;ValidationResult&gt;</code></h5>
+            <p>Validate a branch name against configured rules.</p>
+            <div class="code-block">
+                <pre><code>const result = await branchwright.validate('feat/user-auth');
+
+if (result.valid) {
+  console.log('✓ Branch name is valid');
+} else {
+  console.log(`✗ ${result.message}`);
+  console.log('Suggestions:', result.suggestions);
+}</code></pre>
+            </div>
+
+            <h5><code>create(): Promise&lt;string&gt;</code></h5>
+            <p>Launch interactive branch creation wizard.</p>
+            <div class="code-block">
+                <pre><code>const branchName = await branchwright.create();
+console.log(`Created: ${branchName}`);</code></pre>
+            </div>
+
+            <h5><code>lint(options?: LintOptions): Promise&lt;LintResult[]&gt;</code></h5>
+            <p>Validate one or more branches.</p>
+            <div class="code-block">
+                <pre><code>// Lint current branch
+const results = await branchwright.lint();
+
+// Lint all branches
+const allResults = await branchwright.lint({ all: true });
+
+// Lint specific branches
+const specificResults = await branchwright.lint({ 
+  branches: ['feat/auth', 'fix/bug'] 
+});</code></pre>
+            </div>
+
+            <h5><code>getValidator(): Validator</code></h5>
+            <p>Get the underlying validator instance for advanced usage.</p>
+
+            <h5><code>getCreator(): Creator</code></h5>
+            <p>Get the underlying creator instance for advanced usage.</p>
+
+            <h2>Type Definitions</h2>
+
+            <h3>BranchwrightConfig</h3>
+            <div class="code-block">
+                <pre><code>interface BranchwrightConfig {
+  branchTypes?: BranchTypeOption[];
+  template?: string;
+  maxDescriptionLength?: number;
+  descriptionStyle?: 'kebab-case' | 'snake_case' | 'camelCase' | 'PascalCase';
+  ignoredBranches?: string[];
+  rules?: Rules;
+  extraQuestions?: InteractiveQuestions;
+  questions?: QuestionConfig;
+  plugins?: string[];
+  presets?: string[];
+  showCliTips?: boolean;
+}</code></pre>
+            </div>
+
+            <h3>BranchTypeOption</h3>
+            <div class="code-block">
+                <pre><code>interface BranchTypeOption {
+  name: string;   // Short identifier (feat, fix, etc.)
+  label: string;  // Display name for prompts
+}</code></pre>
+            </div>
+
+            <h3>ValidationResult</h3>
+            <div class="code-block">
+                <pre><code>interface ValidationResult {
+  valid: boolean;
+  message?: string;
+  suggestions?: string[];
+  violations?: RuleViolation[];
+}</code></pre>
+            </div>
+
+            <h3>LintOptions</h3>
+            <div class="code-block">
+                <pre><code>interface LintOptions {
+  all?: boolean;
+  branches?: string[];
+  json?: boolean;
+}</code></pre>
+            </div>
+
+            <h3>LintResult</h3>
+            <div class="code-block">
+                <pre><code>interface LintResult {
+  branch: string;
+  valid: boolean;
+  message?: string;
+  violations?: RuleViolation[];
+}</code></pre>
+            </div>
+
+            <h2>Rule System API</h2>
+
+            <h3>defineRule</h3>
+            <p>Create custom validation rules:</p>
+
+            <div class="code-block">
+                <pre><code>import { defineRule } from '@branchwright/cli';
+
+const myRule = defineRule(
+  {
+    id: 'my-rule',
+    meta: {
+      title: 'My Custom Rule',
+      description: 'Validates something specific',
+    },
+    defaultSeverity: 'required',
+  },
+  (context: RuleContext) => {
+    // Return null if valid
+    if (isValid(context.branchName)) {
+      return null;
+    }
+    
+    // Return violation if invalid
+    return {
+      message: 'Branch name is invalid',
+      suggestions: ['alternative-name'],
+    };
+  }
+);</code></pre>
+            </div>
+
+            <h3>RuleContext</h3>
+            <div class="code-block">
+                <pre><code>interface RuleContext {
+  branchName: string;
+  config: BranchwrightConfig;
+  options?: any;  // Rule-specific options
+}</code></pre>
+            </div>
+
+            <h3>evaluateRules</h3>
+            <p>Evaluate multiple rules against a branch name:</p>
+
+            <div class="code-block">
+                <pre><code>import { evaluateRules, coreRuleRegistry } from '@branchwright/cli';
+
+const violations = await evaluateRules(
+  'feat/my-branch',
+  config,
+  coreRuleRegistry
+);
+
+violations.forEach(v => {
+  console.error(`${v.ruleId}: ${v.message}`);
+});</code></pre>
+            </div>
+
+            <h3>createRegistry</h3>
+            <p>Create a custom rule registry:</p>
+
+            <div class="code-block">
+                <pre><code>import { createRegistry, coreRuleRegistry } from '@branchwright/cli';
+
+const customRegistry = createRegistry(
+  ...coreRuleRegistry.entries(),
+  myCustomRule,
+  anotherCustomRule
+);</code></pre>
+            </div>
+
+            <h2>Utility Functions</h2>
+
+            <h3>defineConfig</h3>
+            <p>Type-safe configuration helper:</p>
+
+            <div class="code-block">
+                <pre><code>import { defineConfig } from '@branchwright/cli';
+
+export default defineConfig({
+  // Full TypeScript autocomplete and validation
+  branchTypes: [/* ... */],
+  template: '{{type}}/{{desc}}',
+});</code></pre>
+            </div>
+
+            <h3>loadConfig</h3>
+            <p>Load configuration from a file:</p>
+
+            <div class="code-block">
+                <pre><code>import { loadConfig } from '@branchwright/cli';
+
+const config = await loadConfig('./path/to/config.ts');</code></pre>
+            </div>
+
+            <h2>Integration Examples</h2>
+
+            <h3>Custom CLI Tool</h3>
+            <div class="code-block">
+                <pre><code>#!/usr/bin/env node
+import { Branchwright } from '@branchwright/cli';
+
+async function main() {
+  const brw = new Branchwright();
+  
+  if (process.argv[2] === 'validate') {
+    const branch = process.argv[3] || getCurrentBranch();
+    const result = await brw.validate(branch);
+    process.exit(result.valid ? 0 : 1);
+  }
+}
+
+main();</code></pre>
+            </div>
+
+            <h3>Express.js Webhook</h3>
+            <div class="code-block">
+                <pre><code>import express from 'express';
+import { Branchwright } from '@branchwright/cli';
+
+const app = express();
+const brw = new Branchwright();
+
+app.post('/validate-branch', async (req, res) => {
+  const { branchName } = req.body;
+  const result = await brw.validate(branchName);
+  
+  res.json({
+    valid: result.valid,
+    message: result.message,
+  });
+});</code></pre>
+            </div>
+
+            <h3>GitHub Action</h3>
+            <div class="code-block">
+                <pre><code>import { Branchwright } from '@branchwright/cli';
+import * as core from '@actions/core';
+
+async function run() {
+  try {
+    const brw = new Branchwright();
+    const branch = process.env.GITHUB_HEAD_REF;
+    const result = await brw.validate(branch);
+    
+    if (!result.valid) {
+      core.setFailed(result.message);
+    }
+  } catch (error) {
+    core.setFailed(error.message);
+  }
+}
+
+run();</code></pre>
+            </div>
+
+            <h3>Husky Pre-push Hook</h3>
+            <div class="code-block">
+                <pre><code>#!/usr/bin/env node
+import { Branchwright } from '@branchwright/cli';
+import { execSync } from 'child_process';
+
+async function validateCurrentBranch() {
+  const brw = new Branchwright();
+  const branch = execSync('git branch --show-current')
+    .toString()
+    .trim();
+  
+  const result = await brw.validate(branch);
+  
+  if (!result.valid) {
+    console.error(`✗ Invalid branch name: ${result.message}`);
+    process.exit(1);
+  }
+  
+  console.log('✓ Branch name is valid');
+}
+
+validateCurrentBranch();</code></pre>
+            </div>
+
+            <h2>Advanced Usage</h2>
+
+            <h3>Custom Validator</h3>
+            <div class="code-block">
+                <pre><code>import { Validator } from '@branchwright/cli';
+
+class CustomValidator extends Validator {
+  async validate(branchName: string) {
+    // Custom validation logic
+    const result = await super.validate(branchName);
+    
+    // Add additional checks
+    if (branchName.includes('temp')) {
+      return {
+        valid: false,
+        message: 'Temporary branches not allowed',
+      };
+    }
+    
+    return result;
+  }
+}</code></pre>
+            </div>
+
+            <h3>Rule Plugin Development</h3>
+            <div class="code-block">
+                <pre><code>// my-plugin.ts
+import { defineRule } from '@branchwright/cli';
+
+export default [
+  defineRule(
+    {
+      id: 'team-prefix',
+      meta: {
+        title: 'Team prefix required',
+        description: 'Branch must start with team name',
+      },
+      defaultSeverity: 'required',
+    },
+    (context) => {
+      const { team } = context.options;
+      if (!context.branchName.startsWith(`${team}/`)) {
+        return {
+          message: `Branch must start with ${team}/`,
+          suggestions: [`${team}/${context.branchName}`],
+        };
+      }
+      return null;
+    }
+  ),
+  // More rules...
+];
+
+// Usage in config
+export default defineConfig({
+  plugins: ['./my-plugin.ts'],
+  rules: {
+    'team-prefix': ['required', { team: 'frontend' }],
+  },
+});</code></pre>
+            </div>
+
+            <div class="doc-nav">
+                <a href="./configuration.html">← Configuration</a>
+                <a href="./examples.html">Examples →</a>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Branchwright. Released under the MIT License.</p>
+            <div class="footer-links">
+                <a href="https://github.com/branchwright/branchwright">GitHub</a>
+                <a href="https://www.npmjs.com/package/@branchwright/cli">npm</a>
+                <a href="https://github.com/branchwright/branchwright/issues">Issues</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
