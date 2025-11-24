@@ -94,6 +94,8 @@ export interface BranchConfig {
   ticketIdPrefix?: string | undefined;
 }
 
+export type Config = Partial<BranchConfig>;
+
 export type RuleExtensionSource = string;
 
 export type RulePresetSource = string;

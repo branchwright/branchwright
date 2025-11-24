@@ -1,4 +1,4 @@
-import type { BranchConfig } from './types.js';
+import type { BranchConfig, Config } from './types.js';
 
 export const DEFAULT_CONFIG: BranchConfig = {
   branchTypes: [
@@ -25,7 +25,7 @@ export const DEFAULT_CONFIG: BranchConfig = {
   ticketIdPrefix: undefined,
 };
 
-export function defineConfig(config: Partial<BranchConfig>): BranchConfig {
+export function defineConfig(config: Config): BranchConfig {
   const result: BranchConfig = {
     branchTypes: config.branchTypes ?? DEFAULT_CONFIG.branchTypes,
     maxDescriptionLength: config.maxDescriptionLength ?? DEFAULT_CONFIG.maxDescriptionLength,

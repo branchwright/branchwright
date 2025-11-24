@@ -2,7 +2,7 @@ import { defineConfig } from '@branchwright/cli';
 
 export default defineConfig({
   branchTypes: [
-    { name: 'feat', label: 'feat:     A new feature or test implementation' },
+    { name: 'feat', label: 'feat:     A new feature' },
     { name: 'chore', label: 'chore:    Routine task or maintenance' },
     { name: 'ci', label: 'ci:       Continuous Integration / Deployment change' },
     { name: 'docs', label: 'docs:     Documentation update or addition' },
