@@ -22,5 +22,5 @@ body:
     attributes:
       label: Scope fit
       options:
-        - label: This fits the creation-first, zero-runtime-deps scope
+        - label: This fits the creation-first, scope
           required: true
