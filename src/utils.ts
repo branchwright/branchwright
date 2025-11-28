@@ -7,7 +7,13 @@ import { DEFAULT_CONFIG } from './config.js';
 import { coreRuleRegistry, coreRules } from './rules/core.js';
 import { loadRulePresetConfigs } from './rules/extensions.js';
 import { type RuleExecution, type RuleRegistry, evaluateRules, resolveRuleConfig } from './rules/index.js';
-import type { BranchConfig, BranchIgnorePattern, DescriptionStyle } from './types.js';
+import type {
+  BranchConfig,
+  BranchIgnorePattern,
+  DescriptionStyle,
+  NormalizedRuleConfig,
+  TicketIdRuleOptions,
+} from './types.js';
 
 const GLOB_ESCAPE_REGEX = /[.*+?^${}()|[\]\\]/g;
 
@@ -103,6 +109,71 @@ export function applyDescriptionStyle(raw: string, style: DescriptionStyle): str
       throw new Error(`Unsupported description style: ${exhaustiveCheck}`);
     }
   }
+}
+
+function buildTicketIdPattern(prefix?: string): string {
+  if (!prefix) {
+    return '[A-Z]+-\\d+';
+  }
+  return `${escapeRegex(prefix)}\\d+`;
+}
+
+interface TicketInfo {
+  ticket: string;
+  separator: string;
+  rest: string;
+  position: 'leading' | 'trailing';
+}
+
+function extractTicketFromDescription(
+  description: string,
+  ticketRule: NormalizedRuleConfig<TicketIdRuleOptions | undefined>,
+): TicketInfo | null {
+  if (ticketRule.severity === 'off') {
+    return null;
+  }
+
+  const ticketPattern = buildTicketIdPattern(ticketRule.options?.prefix);
+
+  const leadingPattern = new RegExp(`^(${ticketPattern})([-_\\s]+)?(.+)?$`);
+  const leadingMatch = leadingPattern.exec(description);
+  if (leadingMatch) {
+    const [, ticket, separator, rest] = leadingMatch;
+    return {
+      ticket,
+      separator: separator ?? '',
+      rest: rest ?? '',
+      position: 'leading',
+    };
+  }
+
+  const trailingPattern = new RegExp(`^(.+?)([-_\\s]+)(${ticketPattern})$`);
+  const trailingMatch = trailingPattern.exec(description);
+  if (trailingMatch) {
+    const [, rest, separator, ticket] = trailingMatch;
+    return {
+      ticket,
+      separator: separator ?? '',
+      rest,
+      position: 'trailing',
+    };
+  }
+
+  return null;
+}
+
+function rebuildDescriptionWithTicket(body: string, ticketInfo: TicketInfo | null): string {
+  if (!ticketInfo) {
+    return body;
+  }
+
+  if (!body) {
+    return ticketInfo.ticket;
+  }
+
+  return ticketInfo.position === 'trailing'
+    ? `${body}${ticketInfo.separator}${ticketInfo.ticket}`
+    : `${ticketInfo.ticket}${ticketInfo.separator}${body}`;
 }
 
 export function buildBranchName(branchType: string, description: string, ticketId?: string, template?: string): string {
@@ -341,46 +412,32 @@ export function parseUserDescription(input: string, config: BranchConfig): Parse
     };
   }
 
-  // Check if input contains ticket ID pattern
-  const ticketIdRule = resolveRuleConfig(config, coreRules.ticketId);
-  const ticketPattern = ticketIdRule.options?.prefix
-    ? new RegExp(`^${escapeRegex(ticketIdRule.options.prefix)}\\d+\\s+(.+)$`)
-    : /^[A-Z]+-\d+\s+(.+)$/;
+  const ticketRule = resolveRuleConfig(config, coreRules.ticketId);
+  const ticketInfo = extractTicketFromDescription(trimmed, ticketRule);
+  const descriptionBody = ticketInfo ? ticketInfo.rest : trimmed;
+  const hasTicket = Boolean(ticketInfo);
 
-  const ticketMatch = ticketPattern.exec(trimmed);
-
-  if (ticketMatch) {
-    const [, extractedDescription] = ticketMatch;
-    const styledDescription = applyDescriptionStyle(extractedDescription, config.descriptionStyle);
-
-    if (styledDescription.length > config.maxDescriptionLength) {
-      return {
-        description: styledDescription,
-        hasTicket: true,
-        ticketError: `Description exceeds maximum length of ${config.maxDescriptionLength} characters.`,
-      };
-    }
-
+  if (!descriptionBody.trim()) {
     return {
-      description: styledDescription,
-      hasTicket: true,
+      description: rebuildDescriptionWithTicket('', ticketInfo),
+      hasTicket,
+      ticketError: 'Description cannot be empty.',
     };
   }
 
-  // No ticket ID found, process as plain description
-  const styledDescription = applyDescriptionStyle(trimmed, config.descriptionStyle);
+  const styledDescription = applyDescriptionStyle(descriptionBody, config.descriptionStyle);
 
   if (styledDescription.length > config.maxDescriptionLength) {
     return {
-      description: styledDescription,
-      hasTicket: false,
+      description: rebuildDescriptionWithTicket(styledDescription, ticketInfo),
+      hasTicket,
       ticketError: `Description exceeds maximum length of ${config.maxDescriptionLength} characters.`,
     };
   }
 
   return {
-    description: styledDescription,
-    hasTicket: false,
+    description: rebuildDescriptionWithTicket(styledDescription, ticketInfo),
+    hasTicket,
   };
 }
 
