@@ -113,6 +113,21 @@ describe('BranchValidator', () => {
       expect(invalidResult.valid).toBe(false);
       expect(invalidResult.message).toContain('must start with "PROJ-"');
     });
+
+    it('should ignore ticket casing inside description when ticket rule enabled', async () => {
+      const config: BranchConfig = {
+        branchTypes: [{ name: 'feat', label: 'Feature' }],
+        maxDescriptionLength: 30,
+        ticketIdPrompt: 'optional',
+        ticketIdPrefix: 'ABC-',
+        ignoredBranches: [],
+        descriptionStyle: 'kebab-case',
+      };
+      validator = new BranchValidator(config);
+
+      const result = await validator.validate('feat/ABC-123-add-feature');
+      expect(result.valid).toBe(true);
+    });
   });
 
   describe('configuration', () => {

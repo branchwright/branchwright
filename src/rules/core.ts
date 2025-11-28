@@ -1,6 +1,75 @@
-import type { RuleSeverity, TicketIdRuleOptions } from '../types.js';
+import type { NormalizedRuleConfig, RuleSeverity, TicketIdRuleOptions } from '../types.js';
 import { applyDescriptionStyle, isDescriptionStyleValid } from '../utils.js';
-import { createRegistry, defineRule } from './index.js';
+import { createRegistry, defineRule, resolveRuleConfig } from './index.js';
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function buildTicketIdPattern(prefix?: string): string {
+  if (!prefix) {
+    return '[A-Z]+-\\d+';
+  }
+  return `${escapeRegex(prefix)}\\d+`;
+}
+
+interface TicketInfo {
+  ticket: string;
+  separator: string;
+  rest: string;
+  position: 'leading' | 'trailing';
+}
+
+function extractTicketFromDescription(
+  description: string,
+  ticketRule: NormalizedRuleConfig<TicketIdRuleOptions | undefined>,
+): TicketInfo | null {
+  if (ticketRule.severity === 'off') {
+    return null;
+  }
+
+  const ticketPattern = buildTicketIdPattern(ticketRule.options?.prefix);
+
+  const leadingPattern = new RegExp(`^(${ticketPattern})([-_\\s]+)?(.+)?$`);
+  const leadingMatch = leadingPattern.exec(description);
+  if (leadingMatch) {
+    const [, ticket, separator, rest] = leadingMatch;
+    return {
+      ticket,
+      separator: separator ?? '',
+      rest: rest ?? '',
+      position: 'leading',
+    };
+  }
+
+  const trailingPattern = new RegExp(`^(.+?)([-_\\s]+)(${ticketPattern})$`);
+  const trailingMatch = trailingPattern.exec(description);
+  if (trailingMatch) {
+    const [, rest, separator, ticket] = trailingMatch;
+    return {
+      ticket,
+      separator: separator ?? '',
+      rest,
+      position: 'trailing',
+    };
+  }
+
+  return null;
+}
+
+function rebuildDescriptionWithTicket(body: string, ticketInfo: TicketInfo | null): string {
+  if (!ticketInfo) {
+    return body;
+  }
+
+  if (!body) {
+    return ticketInfo.ticket;
+  }
+
+  return ticketInfo.position === 'trailing'
+    ? `${body}${ticketInfo.separator}${ticketInfo.ticket}`
+    : `${ticketInfo.ticket}${ticketInfo.separator}${body}`;
+}
 
 const structureRule = defineRule(
   {
@@ -98,12 +167,21 @@ const descriptionStyleRule = defineRule(
       return null;
     }
 
-    if (isDescriptionStyleValid(description, context.config.descriptionStyle)) {
+    const ticketRuleConfig = resolveRuleConfig(context.config, coreRules.ticketId);
+    const ticketInfo = extractTicketFromDescription(description, ticketRuleConfig);
+    const descriptionBody = ticketInfo ? ticketInfo.rest : description;
+
+    if (!descriptionBody) {
+      return null;
+    }
+
+    if (isDescriptionStyleValid(descriptionBody, context.config.descriptionStyle)) {
       return null;
     }
 
     const requiredStyle = context.config.descriptionStyle;
-    const corrected = applyDescriptionStyle(description, requiredStyle);
+    const correctedBody = applyDescriptionStyle(descriptionBody, requiredStyle);
+    const corrected = rebuildDescriptionWithTicket(correctedBody, ticketInfo);
 
     return {
       message: `Description "${description}" must use "${requiredStyle}" style.`,
